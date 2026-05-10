@@ -977,7 +977,13 @@ async function runPipeline(statusCb) {
 // ════════════════════════════════════════════════════════════════════
 const DATA_CHARS = '電脳網闇情報攻殻機動局意識データ零壱拾百千万億∞解析観測流変論調';
 const DIGITS = '0123456789';
+const MAX_DATA_CHARS = 24;   // hard cap on simultaneous falling chars
 function spawnDataChar() {
+  // skip when tab is hidden ─ browsers throttle CSS animations,
+  // so animationend may never fire and DOM accumulates.
+  if (document.hidden) return;
+  const stream = document.getElementById('data-stream');
+  if (!stream || stream.children.length >= MAX_DATA_CHARS) return;
   const el = document.createElement('div');
   el.className = 'data-char';
   const len = 6 + Math.floor(Math.random()*7);
@@ -989,11 +995,22 @@ function spawnDataChar() {
   el.textContent = s;
   el.style.left = (Math.random() * 100) + 'vw';
   el.style.animationDuration = (10 + Math.random()*14) + 's';
-  document.getElementById('data-stream').appendChild(el);
+  stream.appendChild(el);
   el.addEventListener('animationend', () => el.remove());
 }
 setInterval(spawnDataChar, 700);
-for (let i = 0; i < 12; i++) setTimeout(spawnDataChar, i * 200);
+for (let i = 0; i < 8; i++) setTimeout(spawnDataChar, i * 200);
+
+// Safety net: when the tab becomes visible again, sweep any stale chars
+// that the browser failed to clean up while the page was throttled.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  const stream = document.getElementById('data-stream');
+  if (!stream) return;
+  while (stream.children.length > MAX_DATA_CHARS) {
+    stream.firstElementChild.remove();
+  }
+});
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
