@@ -2,3 +2,7 @@
 node_modules/
 *.log
 .env
+
+# Xcode workspace garbage
+*.xcworkspace/
+xcuserdata/
