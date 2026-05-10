@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>News In The Shell ─ Terms / 利用規約</title>
+<style>
+* { box-sizing:border-box; }
+body {
+  margin:0; padding:40px 24px; max-width:760px; margin:0 auto;
+  font-family:'Helvetica Neue', system-ui, sans-serif;
+  background:#000812; color:#cfe7f5; line-height:1.8;
+}
+h1 { color:#00e5ff; letter-spacing:4px; font-size:22px; margin-bottom:8px; }
+h2 { color:#00e5ff; letter-spacing:2px; font-size:16px; margin-top:36px; margin-bottom:12px; }
+.sub { color:#5a7c92; font-size:13px; letter-spacing:1.5px; margin-bottom:32px; }
+p, li { font-size:14px; color:#aac4d8; }
+li { margin-bottom:6px; }
+a { color:#00ff9f; }
+code {
+  background:rgba(0,229,255,0.08); padding:2px 6px;
+  font-family:'Share Tech Mono', monospace; font-size:13px; color:#00e5ff;
+}
+hr { border:none; border-top:1px solid #003855; margin:32px 0; }
+.box {
+  border-left:2px solid #00e5ff; padding:14px 18px; margin:18px 0;
+  background:rgba(0,229,255,0.05); font-size:13px;
+}
+.back {
+  display:inline-block; margin-bottom:24px; color:#00e5ff;
+  text-decoration:none; letter-spacing:2px; font-size:13px;
+  border:1px solid #00415a; padding:8px 14px;
+}
+.back:hover { border-color:#00e5ff; }
+</style>
+</head>
+<body>
+
+<a class="back" href="./index.html">← BACK TO APP</a>
+
+<h1>NEWS IN THE SHELL</h1>
+<div class="sub">Terms of use / Privacy / Copyright notice</div>
+
+<h2>このツールについて</h2>
+<p>
+  News In The Shell は、 RSS フィードのキーワードを 3D 多球儀で観測するブラウザ単体ツールです。
+  本ツール自体はニュースコンテンツを一切配信せず、 ユーザーが指定した RSS フィードをブラウザ内で直接取得・可視化します。
+</p>
+
+<div class="box">
+  本ツールは <b>RSS リーダーの一種</b> です。
+  ニュースキュレーション・配信プラットフォームではありません。
+  Inoreader / Reeder などと同じ位置付けで、 ユーザーが自ら選んだ feed を閲覧する道具を提供しています。
+</div>
+
+<h2>著作権について</h2>
+<ul>
+  <li>各記事のタイトル・要約・本文・画像の著作権は、 各配信元 (元のニュースサイト) に帰属します。</li>
+  <li>本ツールは記事タイトルと短い要約 (200 文字以下) のみを表示し、 本文は配信していません。</li>
+  <li>記事を読むには <code>OPEN ARTICLE →</code> から元サイトへアクセスしてください。 元サイトの利用規約に従って閲覧してください。</li>
+  <li>RSS フィード自体の取得・表示は、 RSS の仕様上意図された使い方であり、 配信元から表示・利用することが許諾されています。</li>
+</ul>
+
+<h2>削除・変更依頼について</h2>
+<p>
+  本ツールは ユーザー側で feed を追加・削除する仕組みです。
+  特定の feed を本ツールから利用しないよう望まれる場合は、 GitHub Issue にてご連絡ください:
+  <a href="https://github.com/Dai-hydrangea/news-in-the-shell/issues" target="_blank">GitHub Issues</a>
+</p>
+<p>
+  サンプル feed のリストから特定の feed を外す対応は迅速に行います。
+  ユーザー個人の localStorage に保存された feed については、 ユーザー自身が SETTINGS から削除できます。
+</p>
+
+<h2>個人情報・データ収集について</h2>
+<ul>
+  <li>本ツールは ユーザーの個人情報を一切収集しません。</li>
+  <li>追加された feed URL・proxy URL は、 ブラウザの <code>localStorage</code> にのみ保存され、 サーバーには送信されません。</li>
+  <li>RSS フィードへのリクエストは、 ユーザーが設定した CORS proxy 経由でブラウザから直接行われます。</li>
+  <li>分析ツール (Google Analytics 等) も搭載していません。</li>
+</ul>
+
+<h2>CORS Proxy について</h2>
+<p>
+  ブラウザのセキュリティ仕様 (CORS) により、 多くの RSS フィードはブラウザから直接取得できません。
+  そのため小規模な中継サーバ (CORS proxy) が必要になります。
+</p>
+<p>
+  推奨: <b>自前で Cloudflare Worker proxy</b> を立てる。
+  リポジトリの <code>proxy/</code> フォルダに完全なコードと 5 分セットアップ手順があります。
+  Cloudflare の無料枠 (1日 10 万リクエスト) で個人利用には充分。
+</p>
+<p>
+  公開 proxy (<code>corsproxy.io</code> 等) も使えますが、 第三者運営なのでログ収集の可能性とレート制限があります。
+</p>
+
+<h2>免責事項</h2>
+<ul>
+  <li>本ツールは 「現状有姿」 で提供されます。 動作保証・サポート義務はありません (MIT License)。</li>
+  <li>RSS フィードの取得失敗・パース失敗・表示の不正確さによる損害について、 本ツールの作者は責任を負いません。</li>
+  <li>本ツールを介して閲覧したコンテンツに関する問題は、 元の配信元に帰属します。</li>
+  <li>本ツールを使った商用利用・大規模配信を計画する場合は、 各配信元と個別に許諾を得ることを強く推奨します。</li>
+</ul>
+
+<h2>ライセンス</h2>
+<p>
+  ソースコードは MIT License で公開されています:
+  <a href="https://github.com/Dai-hydrangea/news-in-the-shell" target="_blank">GitHub: Dai-hydrangea/news-in-the-shell</a>
+</p>
+<p>
+  fork・改変・再配布は自由です。 商用利用も MIT の範囲で可。
+</p>
+
+<hr>
+
+<p style="color:#5a7c92; font-size:12px;">
+  Last updated: 2026-05-13<br>
+  Author: Daisaku Seto / <a href="https://github.com/Dai-hydrangea" target="_blank">@Dai-hydrangea</a>
+</p>
+
+</body>
+</html>

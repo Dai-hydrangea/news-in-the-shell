@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEWS IN THE SHELL</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; }
+body {
+  background:#000812;
+  overflow:hidden;
+  font-family:'Share Tech Mono','Courier New',monospace;
+  color:#aac4d8;
+}
+
+/* ─── HUD ─── */
+#hud {
+  position:fixed; top:18px; left:22px; pointer-events:none;
+  color:#00e5ff; text-shadow:0 0 12px #00e5ff;
+  z-index:10;
+}
+#hud .title { font-size:24px; font-weight:bold; letter-spacing:6px; margin-bottom:4px; }
+#hud .sub   { font-size:13px; color:#006677; letter-spacing:1.5px; }
+
+#tabs {
+  position:fixed; top:18px; left:50%; transform:translateX(-50%);
+  display:flex; gap:8px; z-index:10;
+}
+.tab {
+  padding:10px 22px; font-size:14px; letter-spacing:2.5px;
+  color:#006677; border:1px solid #003344; cursor:pointer;
+  background:rgba(0,8,18,0.7); transition:all 0.15s;
+}
+.tab.active { color:#00e5ff; border-color:#00e5ff; text-shadow:0 0 6px #00e5ff; }
+.tab:hover  { color:#00e5ff; border-color:#005577; }
+
+/* ─── Top-right buttons ─── */
+#topright {
+  position:fixed; top:18px; right:22px;
+  display:flex; gap:8px; z-index:11;
+}
+.icon-btn {
+  padding:10px 16px; font-size:14px; letter-spacing:2px;
+  color:#00e5ff; border:1px solid #00415a; background:rgba(0,8,18,0.7);
+  cursor:pointer; font-family:inherit; transition:all 0.15s;
+}
+.icon-btn:hover { border-color:#00e5ff; box-shadow:0 0 14px rgba(0,229,255,0.35); }
+
+#nav-prev, #nav-next {
+  position:fixed; top:50%; transform:translateY(-50%);
+  width:80px; height:140px; cursor:pointer;
+  border:1px solid #00415a; background:rgba(0,8,18,0.6);
+  color:#00e5ff; font-size:42px;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.15s; z-index:11;
+  text-shadow:0 0 10px #00e5ff;
+}
+#nav-prev { left:22px; }
+#nav-next { right:22px; }
+#nav-prev:hover, #nav-next:hover {
+  background:rgba(0,229,255,0.18);
+  border-color:#00e5ff; box-shadow:0 0 22px rgba(0,229,255,0.45);
+}
+
+#center-label {
+  position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+  color:#00e5ff; font-size:32px; font-weight:bold;
+  letter-spacing:10px; text-shadow:0 0 16px #00e5ff;
+  pointer-events:none; z-index:10;
+  max-width:90vw; text-align:center;
+}
+#center-sub {
+  position:fixed; bottom:60px; left:50%; transform:translateX(-50%);
+  color:#5a7c92; font-size:14px; letter-spacing:3px;
+  pointer-events:none; z-index:10;
+}
+
+#counter { position:fixed; bottom:14px; left:22px; color:#446677; font-size:12px; letter-spacing:1.5px; z-index:10; }
+#updated { position:fixed; bottom:14px; right:22px; color:#446677; font-size:12px; letter-spacing:1.5px; z-index:10; }
+#loading {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  color:#00e5ff; font-size:18px; letter-spacing:4px; text-shadow:0 0 12px #00e5ff;
+  z-index:10; text-align:center; max-width:90vw;
+}
+#loading .small { display:block; margin-top:14px; font-size:13px; color:#5a7c92; letter-spacing:2px; }
+
+/* ─── 攻殻機動隊風背景 ─── */
+#scanlines {
+  position:fixed; inset:0; pointer-events:none; z-index:5;
+  background:repeating-linear-gradient(
+    0deg,
+    rgba(0,255,255,0.030) 0px, rgba(0,255,255,0.030) 1px,
+    transparent 1px, transparent 3px
+  );
+  mix-blend-mode:screen;
+}
+#scan-beam {
+  position:fixed; top:0; left:0; right:0; height:140px;
+  pointer-events:none; z-index:6;
+  background:linear-gradient(180deg, transparent 0%, rgba(0,229,255,0.10) 50%, transparent 100%);
+  animation:scanBeam 8s linear infinite;
+}
+@keyframes scanBeam {
+  0%   { transform:translateY(-140px); }
+  100% { transform:translateY(100vh); }
+}
+#vignette {
+  position:fixed; inset:0; pointer-events:none; z-index:4;
+  background:radial-gradient(ellipse at center, transparent 35%, rgba(0,8,18,0.88) 100%);
+}
+#data-stream { position:fixed; inset:0; pointer-events:none; z-index:3; overflow:hidden; }
+.data-char {
+  position:absolute; color:rgba(0,229,255,0.20);
+  font-family:'Share Tech Mono',monospace; font-size:13px;
+  letter-spacing:1.5px; white-space:pre; line-height:1.6;
+  animation:dataFall linear infinite;
+  text-shadow:0 0 6px rgba(0,229,255,0.5);
+}
+@keyframes dataFall {
+  0%   { transform:translateY(-30px); opacity:0; }
+  10%  { opacity:0.85; }
+  90%  { opacity:0.85; }
+  100% { transform:translateY(100vh); opacity:0; }
+}
+#corner-tl, #corner-tr, #corner-bl, #corner-br {
+  position:fixed; width:60px; height:60px; pointer-events:none; z-index:7;
+  border:1px solid rgba(0,229,255,0.45);
+}
+#corner-tl { top:8px; left:8px;     border-right:none; border-bottom:none; }
+#corner-tr { top:8px; right:8px;    border-left:none;  border-bottom:none; }
+#corner-bl { bottom:8px; left:8px;  border-right:none; border-top:none; }
+#corner-br { bottom:8px; right:8px; border-left:none;  border-top:none; }
+
+/* ─── 詳細パネル ─── */
+#detail-panel {
+  position:fixed; top:0; right:-580px; width:560px; height:100vh; max-width:92vw;
+  background:linear-gradient(160deg, rgba(0,16,32,0.97), rgba(0,32,64,0.97));
+  backdrop-filter:blur(10px);
+  border-left:2px solid #00e5ff;
+  box-shadow:-4px 0 32px rgba(0,229,255,0.25);
+  transition:right 0.32s ease-out;
+  padding:36px 32px;
+  z-index:30;
+  overflow-y:auto;
+  color:#dceaf3;
+}
+#detail-panel.active { right:0; }
+#detail-close {
+  position:absolute; top:18px; right:18px;
+  color:#00e5ff; font-size:15px; font-weight:bold; letter-spacing:2px;
+  cursor:pointer; padding:10px 16px; border:1px solid #00e5ff;
+  background:transparent; font-family:inherit;
+}
+#detail-keyword {
+  font-size:40px; font-weight:bold; color:#00e5ff;
+  text-shadow:0 0 14px rgba(0,229,255,0.6);
+  letter-spacing:3px; margin:36px 0 10px;
+  word-break:break-word;
+}
+#detail-meta-top {
+  font-size:15px; color:#5a7c92; letter-spacing:1.5px; margin-bottom:28px;
+}
+.article-card {
+  border:1px solid #003855; background:rgba(0,30,50,0.5);
+  padding:18px 20px; margin-bottom:16px;
+  transition:all 0.15s;
+}
+.article-card:hover { border-color:#00e5ff; background:rgba(0,40,70,0.7); }
+.article-title {
+  font-size:19px; line-height:1.55; color:#cfe7f5;
+  margin-bottom:10px; font-weight:bold;
+}
+.article-summary {
+  font-size:15px; line-height:1.7; color:#9ab4c8;
+  margin-bottom:12px;
+}
+.article-meta { font-size:13px; color:#557289; letter-spacing:1px; }
+.article-meta span { display:inline-block; margin-right:14px; }
+.article-link {
+  display:inline-block; margin-top:8px;
+  font-size:14px; color:#00ff9f; text-decoration:none;
+  border-bottom:1px solid transparent; letter-spacing:1px;
+}
+.article-link:hover { border-bottom-color:#00ff9f; }
+
+/* ─── モーダル共通 ─── */
+.modal-backdrop {
+  position:fixed; inset:0; background:rgba(0,4,10,0.85); backdrop-filter:blur(6px);
+  z-index:50; display:none; align-items:center; justify-content:center;
+  padding:20px;
+}
+.modal-backdrop.active { display:flex; }
+.modal {
+  background:linear-gradient(160deg, rgba(0,16,32,0.99), rgba(0,28,52,0.99));
+  border:1px solid #00e5ff; box-shadow:0 0 60px rgba(0,229,255,0.35);
+  width:100%; max-width:720px; max-height:88vh; overflow-y:auto;
+  padding:36px 38px; color:#dceaf3;
+}
+.modal h2 {
+  font-size:22px; color:#00e5ff; letter-spacing:4px;
+  text-shadow:0 0 10px rgba(0,229,255,0.6);
+  margin-bottom:8px;
+}
+.modal .modal-sub { font-size:13px; color:#5a7c92; letter-spacing:1.5px; margin-bottom:24px; }
+.modal label { display:block; font-size:13px; color:#5a7c92; letter-spacing:1px; margin:14px 0 6px; }
+.modal input[type=text], .modal input[type=url] {
+  width:100%; padding:12px 14px; font-size:14px;
+  background:rgba(0,8,18,0.8); border:1px solid #003855;
+  color:#dceaf3; font-family:inherit; letter-spacing:0.5px;
+}
+.modal input:focus { outline:none; border-color:#00e5ff; }
+.modal .row { display:flex; gap:10px; flex-wrap:wrap; }
+.modal .row > * { flex:1; min-width:120px; }
+.modal-btn {
+  padding:12px 22px; font-size:14px; letter-spacing:2px;
+  color:#00e5ff; border:1px solid #00e5ff; background:transparent;
+  cursor:pointer; font-family:inherit;
+}
+.modal-btn:hover { background:rgba(0,229,255,0.12); }
+.modal-btn.primary { background:rgba(0,229,255,0.18); }
+.modal-btn.danger  { color:#ff6688; border-color:#882a40; }
+.modal-btn.danger:hover { background:rgba(255,102,136,0.12); }
+.modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
+
+.feed-list { margin-top:16px; }
+.feed-row {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px; margin-bottom:8px;
+  background:rgba(0,16,32,0.7); border:1px solid #003855;
+}
+.feed-row .name { flex:1; min-width:0; }
+.feed-row .name .n { font-size:15px; color:#cfe7f5; font-weight:bold; word-break:break-all; }
+.feed-row .name .u { font-size:11px; color:#446677; word-break:break-all; }
+.feed-row .cat {
+  font-size:11px; padding:4px 10px; letter-spacing:1.5px;
+  color:#000812; background:#00e5ff; font-weight:bold;
+}
+.feed-row .del {
+  cursor:pointer; color:#ff6688; padding:6px 12px; border:1px solid #882a40;
+  font-size:12px; letter-spacing:1.5px; background:transparent; font-family:inherit;
+}
+.feed-row .del:hover { background:rgba(255,102,136,0.15); }
+.feed-empty {
+  padding:40px 20px; text-align:center; color:#446677; font-size:13px;
+  border:1px dashed #003855; letter-spacing:1.5px;
+}
+
+.sample-feeds { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.sample-chip {
+  padding:8px 14px; font-size:12px; letter-spacing:1px;
+  color:#9be7c4; border:1px solid #1a4d3a; background:rgba(0,32,24,0.6);
+  cursor:pointer; font-family:inherit;
+}
+.sample-chip:hover { border-color:#00ff9f; color:#00ff9f; }
+
+.note-box {
+  margin-top:20px; padding:14px 16px; font-size:12px; color:#7a93a8;
+  border-left:2px solid #00e5ff; background:rgba(0,229,255,0.05);
+  line-height:1.7; letter-spacing:0.5px;
+}
+.note-box a { color:#00ff9f; }
+
+#status-line {
+  margin-top:12px; font-size:12px; color:#5a7c92; letter-spacing:1px; min-height:18px;
+}
+#status-line .err { color:#ff6688; }
+#status-line .ok  { color:#00ff9f; }
+</style>
+</head>
+<body>
+
+<div id="data-stream"></div>
+<div id="vignette"></div>
+<div id="scanlines"></div>
+<div id="scan-beam"></div>
+<div id="corner-tl"></div><div id="corner-tr"></div>
+<div id="corner-bl"></div><div id="corner-br"></div>
+
+<div id="hud">
+  <div class="title">NEWS IN THE SHELL</div>
+  <div class="sub">REVOLVER MODE :: ◀ ▶ ROTATE :: TAP KEYWORD</div>
+</div>
+
+<div id="tabs">
+  <div class="tab active" data-mode="category">CATEGORY</div>
+  <div class="tab" data-mode="source">SOURCE</div>
+</div>
+
+<div id="topright">
+  <button class="icon-btn" id="btn-refresh" title="Refresh feeds">⟳ REFRESH</button>
+  <button class="icon-btn" id="btn-settings" title="Settings">⚙ SETTINGS</button>
+</div>
+
+<div id="nav-prev">◀</div>
+<div id="nav-next">▶</div>
+
+<div id="center-label">─</div>
+<div id="center-sub">─</div>
+
+<div id="counter">─</div>
+<div id="updated">INITIALIZING...</div>
+<div id="loading">SCANNING NEURAL NETWORK...<span class="small">first run? open ⚙ SETTINGS to add feeds</span></div>
+
+<div id="detail-panel">
+  <button id="detail-close">CLOSE ✕</button>
+  <h1 id="detail-keyword">─</h1>
+  <div id="detail-meta-top">─</div>
+  <div id="article-list"></div>
+</div>
+
+<!-- ─── Welcome Modal (first launch) ─── -->
+<div class="modal-backdrop" id="welcome-modal">
+  <div class="modal">
+    <h2>WELCOME ─ NEWS IN THE SHELL</h2>
+    <div class="modal-sub">RSS keyword orrery, browser-only, BYOF (bring your own feeds)</div>
+
+    <p style="line-height:1.8; color:#aac4d8; font-size:14px; margin-bottom:14px;">
+      This tool is a <b style="color:#00e5ff;">visualization shell</b> for RSS feeds you provide.<br>
+      It does not bundle any news content — you add the RSS feeds, you choose what to watch.
+    </p>
+    <p style="line-height:1.8; color:#aac4d8; font-size:14px; margin-bottom:14px;">
+      All article copyrights belong to their original publishers. Tap <b>OPEN ARTICLE →</b> to read on the original site.
+    </p>
+    <p style="line-height:1.8; color:#aac4d8; font-size:14px; margin-bottom:14px;">
+      Because of browser CORS, you'll need a small proxy. The default points to a public CORS proxy (rate-limited).
+      For stable use, set up your own (see <a href="./tos.html" target="_blank" style="color:#00ff9f;">docs</a>).
+    </p>
+    <div class="note-box">
+      MIT License · open source · <a href="https://github.com/Dai-hydrangea/news-in-the-shell" target="_blank">GitHub</a>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" id="welcome-ok">UNDERSTOOD ─ OPEN SETTINGS</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Settings Modal ─── -->
+<div class="modal-backdrop" id="settings-modal">
+  <div class="modal">
+    <h2>FEED SETTINGS</h2>
+    <div class="modal-sub">add the RSS feeds you want to observe ─ globe count auto-scales with categories</div>
+
+    <label>YOUR FEEDS</label>
+    <div class="feed-list" id="feed-list"></div>
+
+    <label style="margin-top:24px;">ADD A FEED</label>
+    <div class="row">
+      <input type="text" id="add-name" placeholder="name (e.g. Hacker News)">
+      <input type="text" id="add-cat"  placeholder="category (optional)">
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <input type="url"  id="add-url"  placeholder="https://example.com/rss.xml">
+      <button class="modal-btn primary" id="btn-add" style="flex:0 0 auto;">+ ADD</button>
+    </div>
+
+    <label style="margin-top:24px;">SAMPLE FEEDS (one-click add)</label>
+    <div class="sample-feeds" id="sample-feeds"></div>
+
+    <label style="margin-top:24px;">CORS PROXY URL</label>
+    <input type="url" id="proxy-url" placeholder="https://your-worker.workers.dev/?url=">
+    <div class="note-box">
+      RSS は通常 CORS が無効なので、 ブラウザから直接取得できません。
+      proxy URL の末尾にエンコード済 RSS URL が連結される形式 (例: <code>https://corsproxy.io/?</code>) を指定してください。
+      自前で立てる手順は <a href="./tos.html" target="_blank">ここ</a> から。
+    </div>
+
+    <div id="status-line"></div>
+
+    <div class="modal-actions">
+      <button class="modal-btn" id="btn-clear-all">CLEAR ALL</button>
+      <button class="modal-btn primary" id="btn-save">SAVE & RELOAD</button>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three":          "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { Line2          } from 'three/addons/lines/Line2.js';
+import { LineGeometry   } from 'three/addons/lines/LineGeometry.js';
+import { LineMaterial   } from 'three/addons/lines/LineMaterial.js';
+
+// ════════════════════════════════════════════════════════════════════
+//   CONSTANTS
+// ════════════════════════════════════════════════════════════════════
+const STORAGE_FEEDS = 'nits_feeds_v1';
+const STORAGE_PROXY = 'nits_proxy_v1';
+const STORAGE_SEEN  = 'nits_seen_welcome_v1';
+
+const DEFAULT_PROXY = 'https://corsproxy.io/?';
+
+// CC-friendly / public-domain / dev-friendly samples
+const SAMPLE_FEEDS = [
+  { name:'Hacker News',      url:'https://news.ycombinator.com/rss',                    category:'tech' },
+  { name:'arXiv cs.AI',      url:'http://export.arxiv.org/rss/cs.AI',                   category:'academic' },
+  { name:'Wikinews JA',      url:'https://ja.wikinews.org/w/index.php?title=%E7%89%B9%E5%88%A5:%E6%9C%80%E8%BF%91%E3%81%AE%E6%9B%B4%E6%96%B0&feed=rss', category:'wiki' },
+  { name:'Wikinews EN',      url:'https://en.wikinews.org/w/index.php?title=Special:RecentChanges&feed=rss', category:'wiki' },
+  { name:'Lobsters',         url:'https://lobste.rs/rss',                               category:'tech' },
+  { name:'BBC World',        url:'http://feeds.bbci.co.uk/news/world/rss.xml',          category:'world' },
+  { name:'NHK 主要',         url:'https://www.nhk.or.jp/rss/news/cat0.xml',             category:'general' },
+  { name:'GIGAZINE',         url:'https://gigazine.net/news/rss_2.0/',                  category:'tech' },
+];
+
+const STOP_WORDS = new Set([
+  'について','による','として','ている','された','される',
+  'など','ため','この','その','また','さらに','めぐり',
+  'めぐる','ことで','において','に関して','よると',
+  '以上','以下','以内','以前','以降','最大','最小','最高','最低',
+  '報道','発表','報告','関係','問題','状況','対応','実施',
+  '予定','確認','影響','可能','必要','重要','開始','終了',
+  // EN common
+  'this','that','with','from','have','will','they','their','there','these','those',
+  'about','which','would','could','should','been','being','were','where','when',
+  'into','than','then','what','your','also','more','some','such','only','even',
+  'after','before','because','through','while','still','many','most','much','make',
+  'made','been','over','under','says','said','just','like','very','again',
+]);
+
+const CATEGORY_PALETTE = [
+  '#00d4ff', '#ff4136', '#ffdc00', '#00ff9f', '#b88aff',
+  '#ff851b', '#ff7eb9', '#7fdbff', '#9be7c4', '#e0d2ff',
+  '#ff9b9b', '#aaffaa', '#80c8ff', '#ffb8d4', '#a8e6cf', '#ffc6a0',
+];
+function colorForCategory(name) {
+  let h = 0;
+  for (let i = 0; i < (name||'').length; i++) h = ((h*31) + name.charCodeAt(i)) | 0;
+  return CATEGORY_PALETTE[Math.abs(h) % CATEGORY_PALETTE.length];
+}
+
+const SOURCE_COLOR_PALETTE = CATEGORY_PALETTE;
+function colorForSource(name) { return colorForCategory(name); }
+
+const MAX_KEYWORDS_PER_GLOBE = 60;
+const MAX_KEYWORD_EDGES = 100;
+const TOP_ARTICLES_PER_KEYWORD = 8;
+const GLOBE_RADIUS = 140;
+
+// ════════════════════════════════════════════════════════════════════
+//   FEEDS persistence
+// ════════════════════════════════════════════════════════════════════
+function loadFeeds() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_FEEDS) || '[]'); }
+  catch { return []; }
+}
+function saveFeeds(feeds) { localStorage.setItem(STORAGE_FEEDS, JSON.stringify(feeds)); }
+function loadProxy() { return localStorage.getItem(STORAGE_PROXY) || DEFAULT_PROXY; }
+function saveProxy(p) { localStorage.setItem(STORAGE_PROXY, p || ''); }
+
+// ════════════════════════════════════════════════════════════════════
+//   RSS FETCH + PARSE
+// ════════════════════════════════════════════════════════════════════
+function buildProxyUrl(proxyBase, target) {
+  if (!proxyBase) return target;
+  if (proxyBase.includes('?url=') || proxyBase.endsWith('?')) {
+    return proxyBase + encodeURIComponent(target);
+  }
+  if (proxyBase.endsWith('/')) return proxyBase + encodeURIComponent(target);
+  return proxyBase + '?url=' + encodeURIComponent(target);
+}
+
+async function fetchFeedXml(feed, proxyBase) {
+  // 1) try direct
+  try {
+    const r = await fetch(feed.url, { mode:'cors' });
+    if (r.ok) return await r.text();
+  } catch {}
+  // 2) fallback to proxy
+  if (!proxyBase) throw new Error('CORS direct failed; no proxy configured');
+  const r2 = await fetch(buildProxyUrl(proxyBase, feed.url));
+  if (!r2.ok) throw new Error(`proxy fetch failed: ${r2.status}`);
+  return await r2.text();
+}
+
+function stripHtml(s) {
+  if (!s) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = s;
+  return (tmp.textContent || tmp.innerText || '').replace(/\s+/g,' ').trim();
+}
+
+function parseRssXml(xml, feed) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, 'text/xml');
+  const out = [];
+
+  // RSS 2.0 / RDF
+  doc.querySelectorAll('item').forEach(item => {
+    const title = item.querySelector('title')?.textContent?.trim() || '';
+    const link  = item.querySelector('link')?.textContent?.trim() || '';
+    const desc  = item.querySelector('description')?.textContent || '';
+    const date  = item.querySelector('pubDate')?.textContent?.trim()
+               || item.getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', 'date')[0]?.textContent?.trim()
+               || '';
+    if (!title) return;
+    out.push({
+      title, url: link, summary: stripHtml(desc).slice(0,200),
+      published_at: date, source_name: feed.name, category: feed.category || feed.name,
+    });
+  });
+
+  // Atom
+  doc.querySelectorAll('entry').forEach(entry => {
+    const title = entry.querySelector('title')?.textContent?.trim() || '';
+    let link = '';
+    const linkEl = entry.querySelector('link[rel="alternate"]') || entry.querySelector('link');
+    if (linkEl) link = linkEl.getAttribute('href') || linkEl.textContent || '';
+    const summary = entry.querySelector('summary')?.textContent
+                 || entry.querySelector('content')?.textContent || '';
+    const date = entry.querySelector('published')?.textContent?.trim()
+              || entry.querySelector('updated')?.textContent?.trim() || '';
+    if (!title) return;
+    out.push({
+      title, url: link, summary: stripHtml(summary).slice(0,200),
+      published_at: date, source_name: feed.name, category: feed.category || feed.name,
+    });
+  });
+
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//   KEYWORD EXTRACTION (multi-lingual)
+// ════════════════════════════════════════════════════════════════════
+function extractKeywords(text) {
+  if (!text) return [];
+  const found = new Set();
+  // JP katakana 3+
+  for (const m of text.matchAll(/[ァ-ヴー]{3,}/g)) found.add(m[0]);
+  // JP kanji 2-6
+  for (const m of text.matchAll(/[一-鿿]{2,6}/g)) {
+    if (!STOP_WORDS.has(m[0])) found.add(m[0]);
+  }
+  // EN tokens 4+
+  for (const m of text.matchAll(/[A-Za-z][A-Za-z0-9]{3,}/g)) {
+    const w = m[0].toLowerCase();
+    if (!STOP_WORDS.has(w) && w.length <= 20) found.add(w);
+  }
+  return [...found];
+}
+
+function countKeywords(items) {
+  const counter = new Map();
+  for (const it of items) {
+    const t = it.title || '';
+    for (const m of t.matchAll(/[ァ-ヴー]{3,}/g)) {
+      counter.set(m[0], (counter.get(m[0]) || 0) + 2);
+    }
+    for (const m of t.matchAll(/[一-鿿]{2,6}/g)) {
+      const w = m[0]; if (STOP_WORDS.has(w)) continue;
+      counter.set(w, (counter.get(w) || 0) + 1);
+    }
+    for (const m of t.matchAll(/[A-Za-z][A-Za-z0-9]{3,}/g)) {
+      const w = m[0].toLowerCase(); if (STOP_WORDS.has(w) || w.length > 20) continue;
+      counter.set(w, (counter.get(w) || 0) + 1);
+    }
+  }
+  return counter;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//   SPRING LAYOUT (port of Python _spring_layout)
+// ════════════════════════════════════════════════════════════════════
+function springLayout(n, edges, radius = GLOBE_RADIUS, iterations = 200) {
+  if (n === 0) return [];
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const phi = Math.acos(1 - 2 * (i + 0.5) / n);
+    const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+    pts.push([
+      Math.sin(phi) * Math.cos(theta),
+      Math.cos(phi),
+      Math.sin(phi) * Math.sin(theta),
+    ]);
+  }
+  if (!edges.length) return pts.map(p => [p[0]*radius, p[1]*radius, p[2]*radius]);
+
+  const maxW = Math.max(...edges.map(e => e[2]), 1);
+  const adj = new Map();
+  for (const [a,b,w] of edges) {
+    if (a < 0 || a >= n || b < 0 || b >= n) continue;
+    const key = a < b ? `${a}_${b}` : `${b}_${a}`;
+    adj.set(key, w / maxW);
+  }
+  const K_ATTR = 0.16, K_REP = 0.020;
+
+  for (let step = 0; step < iterations; step++) {
+    const temp = 1.0 - step / iterations;
+    const forces = Array.from({length:n}, () => [0,0,0]);
+    for (let i = 0; i < n; i++) {
+      for (let j = i+1; j < n; j++) {
+        const dx = pts[j][0]-pts[i][0], dy = pts[j][1]-pts[i][1], dz = pts[j][2]-pts[i][2];
+        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        if (dist < 1e-6) continue;
+        const ux = dx/dist, uy = dy/dist, uz = dz/dist;
+        const rep = K_REP / (dist*dist);
+        forces[i][0] -= ux*rep; forces[i][1] -= uy*rep; forces[i][2] -= uz*rep;
+        forces[j][0] += ux*rep; forces[j][1] += uy*rep; forces[j][2] += uz*rep;
+        const key = `${i}_${j}`;
+        if (adj.has(key)) {
+          const attr = K_ATTR * adj.get(key) * dist;
+          forces[i][0] += ux*attr; forces[i][1] += uy*attr; forces[i][2] += uz*attr;
+          forces[j][0] -= ux*attr; forces[j][1] -= uy*attr; forces[j][2] -= uz*attr;
+        }
+      }
+    }
+    for (let i = 0; i < n; i++) {
+      const [nx,ny,nz] = pts[i];
+      const [fx,fy,fz] = forces[i];
+      const dot = fx*nx + fy*ny + fz*nz;
+      const tx = fx - dot*nx, ty = fy - dot*ny, tz = fz - dot*nz;
+      pts[i][0] += tx*temp; pts[i][1] += ty*temp; pts[i][2] += tz*temp;
+      const d = Math.sqrt(pts[i][0]**2 + pts[i][1]**2 + pts[i][2]**2);
+      if (d > 0) { pts[i][0]/=d; pts[i][1]/=d; pts[i][2]/=d; }
+    }
+  }
+  return pts.map(p => [p[0]*radius, p[1]*radius, p[2]*radius]);
+}
+
+// ════════════════════════════════════════════════════════════════════
+//   GLOBE BUILDER (1 group of items → 1 globe data)
+// ════════════════════════════════════════════════════════════════════
+function buildGlobeData(id, label, color, items) {
+  if (!items.length) return null;
+
+  const counter = countKeywords(items);
+  const top = [...counter.entries()].sort((a,b) => b[1] - a[1]).slice(0, MAX_KEYWORDS_PER_GLOBE);
+  if (!top.length) return null;
+  const topSet = new Set(top.map(t => t[0]));
+
+  // articles per keyword
+  const wordArticles = new Map();
+  for (const it of items) {
+    const kws = extractKeywords(it.title || '').filter(k => topSet.has(k));
+    for (const k of kws) {
+      if (!wordArticles.has(k)) wordArticles.set(k, []);
+      wordArticles.get(k).push(it);
+    }
+  }
+  for (const arr of wordArticles.values()) {
+    arr.sort((a,b) => (b.score||0) - (a.score||0));
+  }
+
+  // co-occurrence
+  const pairCounter = new Map();
+  for (const it of items) {
+    const kws = [...new Set(extractKeywords(it.title || '').filter(k => topSet.has(k)))].sort();
+    for (let i = 0; i < kws.length; i++) {
+      for (let j = i+1; j < kws.length; j++) {
+        const key = `${kws[i]} ${kws[j]}`;
+        pairCounter.set(key, (pairCounter.get(key) || 0) + 1);
+      }
+    }
+  }
+
+  const wordIdx = new Map(top.map((t,i) => [t[0], i]));
+  const edgesRaw = [];
+  const sortedPairs = [...pairCounter.entries()].sort((a,b) => b[1] - a[1]).slice(0, MAX_KEYWORD_EDGES);
+  for (const [key, w] of sortedPairs) {
+    if (w < 1) continue;
+    const [a,b] = key.split(' ');
+    edgesRaw.push([wordIdx.get(a), wordIdx.get(b), w]);
+  }
+
+  const positions = springLayout(top.length, edgesRaw, GLOBE_RADIUS);
+
+  const nodes = top.map(([w,count],i) => ({
+    text: w, count,
+    articles: (wordArticles.get(w) || []).slice(0, TOP_ARTICLES_PER_KEYWORD),
+    pos: positions[i] || [0,0,0],
+  }));
+  const edges = edgesRaw.map(([a,b,w]) => ({ a: top[a][0], b: top[b][0], weight: w }));
+
+  return {
+    id, label, color,
+    node_count: nodes.length,
+    total_articles: items.length,
+    nodes, edges,
+  };
+}
+
+// Group items by category → build N globes (auto-scales with categories)
+function buildGlobesByCategory(allItems) {
+  const byCat = new Map();
+  for (const it of allItems) {
+    const cat = it.category || 'general';
+    if (!byCat.has(cat)) byCat.set(cat, []);
+    byCat.get(cat).push(it);
+  }
+  const globes = [];
+  for (const [cat, items] of byCat) {
+    const g = buildGlobeData(cat, cat.toUpperCase(), colorForCategory(cat), items);
+    if (g) globes.push(g);
+  }
+  // sort by article count desc so the biggest gets slot 0
+  globes.sort((a,b) => b.total_articles - a.total_articles);
+  return globes;
+}
+
+function buildGlobesBySource(allItems) {
+  const bySrc = new Map();
+  for (const it of allItems) {
+    const src = it.source_name || 'unknown';
+    if (!bySrc.has(src)) bySrc.set(src, []);
+    bySrc.get(src).push(it);
+  }
+  const globes = [];
+  for (const [src, items] of bySrc) {
+    const g = buildGlobeData(src, src.toUpperCase(), colorForSource(src), items);
+    if (g) globes.push(g);
+  }
+  globes.sort((a,b) => b.total_articles - a.total_articles);
+  return globes;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//   PIPELINE: load feeds → fetch all → parse → build globes
+// ════════════════════════════════════════════════════════════════════
+let allItems = [];   // all parsed items across feeds
+let feedsConfig = [];
+
+async function runPipeline(statusCb) {
+  feedsConfig = loadFeeds();
+  const proxy = loadProxy();
+  if (!feedsConfig.length) {
+    statusCb?.('NO FEEDS CONFIGURED ─ open ⚙ SETTINGS', 'err');
+    document.getElementById('loading').innerHTML =
+      'NO FEEDS CONFIGURED<span class="small">open ⚙ SETTINGS to add RSS feeds</span>';
+    document.getElementById('loading').style.display = 'block';
+    allItems = [];
+    rebuildGlobes();
+    return;
+  }
+  document.getElementById('loading').textContent = 'FETCHING FEEDS...';
+  document.getElementById('loading').style.display = 'block';
+
+  const results = [];
+  let okCount = 0, failCount = 0;
+  await Promise.all(feedsConfig.map(async (feed, i) => {
+    try {
+      const xml = await fetchFeedXml(feed, proxy);
+      const items = parseRssXml(xml, feed);
+      results.push(...items);
+      okCount++;
+      statusCb?.(`OK [${okCount}/${feedsConfig.length}] ${feed.name} (${items.length})`, 'ok');
+    } catch (e) {
+      failCount++;
+      console.warn(`feed failed: ${feed.name}`, e);
+      statusCb?.(`FAIL ${feed.name}: ${e.message}`, 'err');
+    }
+  }));
+
+  allItems = results;
+  rebuildGlobes();
+  document.getElementById('updated').textContent =
+    `GENERATED: ${new Date().toLocaleString()} ─ ${okCount}/${feedsConfig.length} feeds`;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//   THREE.JS SCENE (NetScope core, untouched)
+// ════════════════════════════════════════════════════════════════════
+const DATA_CHARS = '電脳網闇情報攻殻機動局意識データ零壱拾百千万億∞解析観測流変論調';
+const DIGITS = '0123456789';
+function spawnDataChar() {
+  const el = document.createElement('div');
+  el.className = 'data-char';
+  const len = 6 + Math.floor(Math.random()*7);
+  let s = '';
+  for (let i = 0; i < len; i++) {
+    const pool = Math.random() < 0.5 ? DATA_CHARS : DIGITS;
+    s += pool[Math.floor(Math.random()*pool.length)] + '\n';
+  }
+  el.textContent = s;
+  el.style.left = (Math.random() * 100) + 'vw';
+  el.style.animationDuration = (10 + Math.random()*14) + 's';
+  document.getElementById('data-stream').appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+setInterval(spawnDataChar, 700);
+for (let i = 0; i < 12; i++) setTimeout(spawnDataChar, i * 200);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x000812);
+document.body.appendChild(renderer.domElement);
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 8000);
+camera.position.set(0, 80, 850);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance   = 550;
+controls.maxDistance   = 2600;
+controls.enablePan     = false;
+controls.enableRotate  = false;
+controls.enableZoom    = true;
+controls.target.set(0, 0, 0);
+
+{
+  const grid = new THREE.GridHelper(3000, 70, 0x004466, 0x002233);
+  grid.position.y = -350;
+  grid.material.transparent = true; grid.material.opacity = 0.4;
+  scene.add(grid);
+  const grid2 = new THREE.GridHelper(3000, 14, 0x00aacc, 0x005577);
+  grid2.position.y = -349;
+  grid2.material.transparent = true; grid2.material.opacity = 0.25;
+  scene.add(grid2);
+}
+{
+  const n = 1000, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const ph = Math.random()*Math.PI*2, th = Math.random()*Math.PI;
+    const r  = 1100 + Math.random()*1800;
+    pos[i*3]   = r*Math.sin(th)*Math.cos(ph);
+    pos[i*3+1] = r*Math.cos(th);
+    pos[i*3+2] = r*Math.sin(th)*Math.sin(ph);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x003355, size: 1.4 })));
+}
+
+const orreryGroup = new THREE.Group();
+scene.add(orreryGroup);
+
+// ─── REVOLVER slot system (auto-scales with globe count) ───
+const MAIN_SCALE = 2.6;
+const SAT_SCALE  = 0.32;
+const SAT_RING_RADIUS = 620;
+const SAT_RING_Z      = -120;
+const SAT_RING_Y_SCALE = 0.65;
+
+function buildSlots(count) {
+  const slots = [];
+  slots.push({ pos: new THREE.Vector3(0, 0, 0), scale: MAIN_SCALE });
+  const n = count - 1;
+  for (let i = 0; i < n; i++) {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+    slots.push({
+      pos: new THREE.Vector3(
+        Math.cos(angle) * SAT_RING_RADIUS,
+        Math.sin(angle) * SAT_RING_RADIUS * SAT_RING_Y_SCALE,
+        SAT_RING_Z,
+      ),
+      scale: SAT_SCALE,
+    });
+  }
+  return slots;
+}
+
+function makeKeywordSprite(text, fontSize, ratio, colorHex) {
+  const canvas = document.createElement('canvas');
+  const ctx    = canvas.getContext('2d');
+  const fs     = Math.round(Math.max(14, Math.min(70, fontSize)));
+  ctx.font     = `bold ${fs}px "Share Tech Mono", "Courier New", monospace`;
+  const tw     = ctx.measureText(text).width;
+  canvas.width  = Math.ceil(tw) + 28;
+  canvas.height = fs + 18;
+  ctx.font      = `bold ${fs}px "Share Tech Mono", "Courier New", monospace`;
+  const hex = colorHex.toString(16).padStart(6, '0');
+  const r = parseInt(hex.slice(0,2), 16);
+  const g = parseInt(hex.slice(2,4), 16);
+  const b = parseInt(hex.slice(4,6), 16);
+  const intensity = 0.30 + ratio * 0.70;
+  const alpha     = 0.42 + ratio * 0.58;
+  const color = `rgba(${Math.round(r*intensity)},${Math.round(g*intensity)},${Math.round(b*intensity)},${alpha})`;
+  ctx.shadowColor = color;
+  ctx.shadowBlur  = 8 + ratio * 16;
+  ctx.fillStyle   = color;
+  ctx.fillText(text, 14, fs + 4);
+  ctx.shadowBlur  = 4 + ratio * 6;
+  ctx.fillText(text, 14, fs + 4);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+  const sp  = new THREE.Sprite(mat);
+  sp.scale.set(canvas.width * 0.30, canvas.height * 0.30, 1);
+  return sp;
+}
+
+function makeCategoryLabel(text, colorHex) {
+  const canvas = document.createElement('canvas');
+  const ctx    = canvas.getContext('2d');
+  const fs     = 80;
+  ctx.font     = `bold ${fs}px "Orbitron", "Share Tech Mono", monospace`;
+  const tw     = ctx.measureText(text).width;
+  canvas.width  = Math.ceil(tw) + 80;
+  canvas.height = fs + 40;
+  ctx.font      = `bold ${fs}px "Orbitron", "Share Tech Mono", monospace`;
+  const hex = colorHex.toString(16).padStart(6, '0');
+  const color = '#' + hex;
+  ctx.shadowColor = color;
+  ctx.shadowBlur  = 36;
+  ctx.fillStyle   = color;
+  ctx.fillText(text, 40, fs + 14);
+  ctx.shadowBlur  = 16;
+  ctx.fillText(text, 40, fs + 14);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+  const sp  = new THREE.Sprite(mat);
+  sp.scale.set(canvas.width * 0.55, canvas.height * 0.55, 1);
+  return sp;
+}
+
+function buildGlobe(globeData) {
+  const group = new THREE.Group();
+  group.userData = { globeData };
+
+  const radius = GLOBE_RADIUS;
+  const colorHex = parseInt(globeData.color.replace('#', ''), 16);
+
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, 32, 32),
+    new THREE.MeshBasicMaterial({ color: colorHex, wireframe: true, transparent: true, opacity: 0.13 })
+  );
+  group.add(sphere);
+
+  const eq = new THREE.Mesh(
+    new THREE.TorusGeometry(radius, 0.5, 2, 100),
+    new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.5 })
+  );
+  group.add(eq);
+  const mer = new THREE.Mesh(
+    new THREE.TorusGeometry(radius, 0.35, 2, 100),
+    new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.28 })
+  );
+  mer.rotation.x = Math.PI / 2;
+  group.add(mer);
+
+  const maxCount = globeData.nodes[0]?.count || 1;
+  const minCount = globeData.nodes[globeData.nodes.length - 1]?.count || 1;
+  const range = Math.max(1, maxCount - minCount);
+  const posMap = {};
+  globeData.nodes.forEach(node => {
+    const ratio = Math.pow((node.count - minCount) / range, 0.7);
+    const fs = 18 + ratio * 38;
+    const sprite = makeKeywordSprite(node.text, fs, ratio, colorHex);
+    const pos = node.pos || [0, 0, 0];
+    sprite.position.set(pos[0], pos[1], pos[2]);
+    sprite.userData = { keyword: node, globeId: globeData.id };
+    group.add(sprite);
+    posMap[node.text] = pos;
+  });
+
+  const resVec = new THREE.Vector2(innerWidth, innerHeight);
+  const edges = globeData.edges || [];
+  if (edges.length) {
+    const maxW = Math.max(...edges.map(e => e.weight), 1);
+    edges.forEach(e => {
+      const pA = posMap[e.a], pB = posMap[e.b];
+      if (!pA || !pB) return;
+      const ratio = e.weight / maxW;
+      const linewidth = 0.6 + ratio * 2.6;
+      const opacity = 0.10 + ratio * 0.50;
+      const intensity = 0.5 + ratio * 0.5;
+      const color = new THREE.Color(
+        ((colorHex >> 16) & 0xff) / 255 * intensity,
+        ((colorHex >>  8) & 0xff) / 255 * intensity,
+        ( colorHex        & 0xff) / 255 * intensity
+      );
+      const geo = new LineGeometry();
+      geo.setPositions([pA[0], pA[1], pA[2], pB[0], pB[1], pB[2]]);
+      const mat = new LineMaterial({
+        color, linewidth, transparent: true, opacity,
+        depthWrite: false, resolution: resVec,
+      });
+      group.add(new Line2(geo, mat));
+    });
+  }
+
+  const label = makeCategoryLabel(globeData.label, colorHex);
+  label.position.set(0, radius + 60, 0);
+  group.add(label);
+  group.userData.label = label;
+
+  return group;
+}
+
+// ─── REVOLVER state ───
+let globesData = [];
+let globesList = [];
+let slots = [];
+let slotAssignment = [];
+let animTime = 0, animDur = 0.5, animating = false;
+let animFromPos = [], animFromScale = [], animToPos = [], animToScale = [];
+let pendingDirection = 0;
+
+function disposeGroup(group) {
+  if (!group) return;
+  group.traverse?.(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+  if (group.parent) group.parent.remove(group);
+}
+
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+function layoutRevolver() {
+  globesList.forEach(disposeGroup);
+  globesList = [];
+  if (!globesData.length) {
+    document.getElementById('center-label').textContent = '─';
+    document.getElementById('center-sub').textContent = '─';
+    return;
+  }
+  slots = buildSlots(globesData.length);
+  globesData.forEach((g, i) => {
+    const grp = buildGlobe(g);
+    grp.userData.staticIndex = i;
+    grp.position.copy(slots[i].pos);
+    grp.scale.setScalar(slots[i].scale);
+    orreryGroup.add(grp);
+    globesList.push(grp);
+  });
+  slotAssignment = globesList.map((_, i) => i);
+  animating = false;
+  pendingDirection = 0;
+  updateCenterLabel();
+}
+
+function getMainGlobeData() {
+  for (let i = 0; i < globesList.length; i++) {
+    if (slotAssignment[i] === 0) return globesData[i];
+  }
+  return null;
+}
+
+function updateCenterLabel() {
+  const g = getMainGlobeData();
+  if (!g) return;
+  document.getElementById('center-label').textContent = g.label;
+  document.getElementById('center-sub').textContent =
+    `${g.node_count} KEYWORDS  /  ${g.total_articles} ARTICLES`;
+  globesList.forEach((grp, i) => {
+    if (grp.userData.label) {
+      grp.userData.label.material.opacity = (slotAssignment[i] === 0) ? 0.0 : 0.85;
+    }
+  });
+}
+
+function rotateRevolver(direction) {
+  if (animating) { pendingDirection = direction; return; }
+  if (globesList.length < 2) return;
+  const N = globesList.length;
+  const newAssignment = slotAssignment.map(s => ((s + direction) % N + N) % N);
+  animFromPos = []; animFromScale = []; animToPos = []; animToScale = [];
+  globesList.forEach((g, i) => {
+    animFromPos.push(g.position.clone());
+    animFromScale.push(g.scale.x);
+    const newSlot = newAssignment[i];
+    animToPos.push(slots[newSlot].pos.clone());
+    animToScale.push(slots[newSlot].scale);
+  });
+  slotAssignment = newAssignment;
+  animTime = 0;
+  animating = true;
+  setTimeout(updateCenterLabel, animDur * 1000 * 0.5);
+}
+
+function updateRevolverAnim(dt) {
+  if (!animating) return;
+  animTime += dt;
+  const t = Math.min(1, animTime / animDur);
+  const eased = easeOutCubic(t);
+  globesList.forEach((g, i) => {
+    g.position.lerpVectors(animFromPos[i], animToPos[i], eased);
+    const s = animFromScale[i] + (animToScale[i] - animFromScale[i]) * eased;
+    g.scale.setScalar(s);
+  });
+  if (t >= 1) {
+    animating = false;
+    if (pendingDirection !== 0) {
+      const d = pendingDirection; pendingDirection = 0;
+      rotateRevolver(d);
+    }
+  }
+}
+
+let currentMode = 'category';
+
+function rebuildGlobes() {
+  if (!allItems.length) {
+    globesData = [];
+    layoutRevolver();
+    document.getElementById('counter').textContent = 'GLOBES: 0';
+    return;
+  }
+  globesData = (currentMode === 'source')
+    ? buildGlobesBySource(allItems)
+    : buildGlobesByCategory(allItems);
+  layoutRevolver();
+  document.getElementById('loading').style.display = 'none';
+  const totalKw = globesData.reduce((s,g) => s + g.node_count, 0);
+  document.getElementById('counter').textContent =
+    `GLOBES: ${globesData.length}  /  KEYWORDS: ${totalKw}  /  ARTICLES: ${allItems.length}`;
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentMode = tab.dataset.mode;
+    rebuildGlobes();
+  });
+});
+
+document.getElementById('nav-prev').addEventListener('click', () => rotateRevolver(-1));
+document.getElementById('nav-next').addEventListener('click', () =>  rotateRevolver(+1));
+window.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft')  rotateRevolver(-1);
+  if (e.key === 'ArrowRight') rotateRevolver(+1);
+});
+
+// ─── pointer state machine ───
+let pState = null;
+function findMainGlobe() {
+  for (let i = 0; i < globesList.length; i++) {
+    if (slotAssignment[i] === 0) return globesList[i];
+  }
+  return null;
+}
+function isHitOnMain(hit, main) {
+  if (!hit || !main) return false;
+  if (hit.type === 'globe' && hit.group === main) return true;
+  if (hit.type === 'keyword') {
+    let found = false;
+    main.traverse(o => { if (o.userData?.keyword === hit.node) found = true; });
+    return found;
+  }
+  return false;
+}
+
+const raycaster = new THREE.Raycaster();
+const pointer   = new THREE.Vector2();
+
+function getHit(e) {
+  const x = (e.touches ? e.touches[0].clientX : e.clientX);
+  const y = (e.touches ? e.touches[0].clientY : e.clientY);
+  pointer.x = (x / innerWidth) *  2 - 1;
+  pointer.y = (y / innerHeight) * -2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const sprites = [];
+  orreryGroup.traverse(o => { if (o.isSprite && o.userData.keyword) sprites.push(o); });
+  const sprHits = raycaster.intersectObjects(sprites);
+  if (sprHits.length) return { type: 'keyword', node: sprHits[0].object.userData.keyword };
+  const meshes = [];
+  globesList.forEach(g => {
+    g.children.forEach(c => {
+      if (c.isMesh && c.geometry?.type === 'SphereGeometry') meshes.push(c);
+    });
+  });
+  const meshHits = raycaster.intersectObjects(meshes);
+  if (meshHits.length) {
+    let g = meshHits[0].object;
+    while (g.parent && !g.userData.globeData) g = g.parent;
+    return { type: 'globe', group: g };
+  }
+  return null;
+}
+
+function showKeywordDetail(keyword) {
+  if (!keyword) return;
+  document.getElementById('detail-keyword').textContent = keyword.text;
+  document.getElementById('detail-meta-top').textContent =
+    `${keyword.count} 出現  /  ${keyword.articles.length} 記事`;
+  const list = document.getElementById('article-list');
+  list.innerHTML = '';
+  if (!keyword.articles || !keyword.articles.length) {
+    list.innerHTML = '<p style="color:#446677;font-size:14px;">関連記事なし</p>';
+  } else {
+    keyword.articles.forEach(a => {
+      const card = document.createElement('div');
+      card.className = 'article-card';
+      const titleEl   = document.createElement('div'); titleEl.className   = 'article-title';   titleEl.textContent   = a.title || '─';
+      const summaryEl = document.createElement('div'); summaryEl.className = 'article-summary'; summaryEl.textContent = a.summary || '';
+      const metaEl    = document.createElement('div'); metaEl.className    = 'article-meta';
+      metaEl.innerHTML = `<span>SOURCE: ${a.source_name || '─'}</span>` +
+                         (a.published_at ? `<span>${(a.published_at||'').slice(0,16)}</span>` : '');
+      card.appendChild(titleEl);
+      if (a.summary) card.appendChild(summaryEl);
+      card.appendChild(metaEl);
+      if (a.url) {
+        const linkEl = document.createElement('a');
+        linkEl.className = 'article-link';
+        linkEl.href = a.url; linkEl.target = '_blank'; linkEl.rel = 'noopener';
+        linkEl.textContent = 'OPEN ARTICLE →';
+        card.appendChild(linkEl);
+      }
+      list.appendChild(card);
+    });
+  }
+  document.getElementById('detail-panel').classList.add('active');
+}
+
+document.getElementById('detail-close').addEventListener('click', () => {
+  document.getElementById('detail-panel').classList.remove('active');
+});
+
+renderer.domElement.addEventListener('pointerdown', e => {
+  const hit = getHit(e);
+  const main = findMainGlobe();
+  pState = {
+    startX: e.clientX, startY: e.clientY, startT: Date.now(),
+    lastX: e.clientX, lastY: e.clientY,
+    initialHit: hit, onMain: isHitOnMain(hit, main),
+    mode: 'tap-candidate',
+  };
+});
+
+renderer.domElement.addEventListener('pointermove', e => {
+  if (!pState) return;
+  const totalDx = e.clientX - pState.startX;
+  const totalDy = e.clientY - pState.startY;
+  const dist = Math.sqrt(totalDx*totalDx + totalDy*totalDy);
+  if (pState.mode === 'tap-candidate' && dist > 6) {
+    pState.mode = pState.onMain ? 'main-rotate' : 'background-swipe';
+  }
+  const dx = e.clientX - pState.lastX;
+  const dy = e.clientY - pState.lastY;
+  pState.lastX = e.clientX;
+  pState.lastY = e.clientY;
+  if (pState.mode === 'main-rotate') {
+    const main = findMainGlobe();
+    if (main) {
+      main.rotation.y += dx * 0.006;
+      main.rotation.x = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, main.rotation.x + dy * 0.006));
+    }
+  }
+});
+
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!pState) return;
+  const totalDx = e.clientX - pState.startX;
+  const totalDy = e.clientY - pState.startY;
+  const dist = Math.sqrt(totalDx*totalDx + totalDy*totalDy);
+  const dt = Date.now() - pState.startT;
+  if (pState.mode === 'tap-candidate' && dist <= 10 && dt <= 400) {
+    const hit = pState.initialHit;
+    if (hit) {
+      if (hit.type === 'keyword') showKeywordDetail(hit.node);
+      else if (hit.type === 'globe') {
+        const i = globesList.indexOf(hit.group);
+        if (i >= 0) {
+          const N = globesList.length;
+          const curSlot = slotAssignment[i];
+          if (curSlot !== 0) {
+            const ccw = curSlot, cw = N - curSlot;
+            if (cw <= ccw) rotateRevolver(+cw); else rotateRevolver(-ccw);
+          }
+        }
+      }
+    }
+  } else if (pState.mode === 'background-swipe') {
+    if (Math.abs(totalDx) > 100 && Math.abs(totalDx) > Math.abs(totalDy) * 1.3) {
+      rotateRevolver(totalDx < 0 ? +1 : -1);
+    }
+  }
+  pState = null;
+});
+
+let lastT = performance.now();
+function animate(now) {
+  requestAnimationFrame(animate);
+  const dt = (now - lastT) / 1000;
+  lastT = now;
+  controls.update();
+  updateRevolverAnim(dt);
+  globesList.forEach((g, i) => {
+    const isMain = (slotAssignment[i] === 0);
+    g.rotation.y += dt * (isMain ? 0.10 : 0.25);
+  });
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ════════════════════════════════════════════════════════════════════
+//   SETTINGS MODAL UI
+// ════════════════════════════════════════════════════════════════════
+const settingsModal = document.getElementById('settings-modal');
+const welcomeModal  = document.getElementById('welcome-modal');
+
+function openSettings() {
+  renderFeedList();
+  renderSampleFeeds();
+  document.getElementById('proxy-url').value = loadProxy();
+  document.getElementById('status-line').textContent = '';
+  settingsModal.classList.add('active');
+}
+function closeSettings() { settingsModal.classList.remove('active'); }
+
+document.getElementById('btn-settings').addEventListener('click', openSettings);
+document.getElementById('btn-refresh').addEventListener('click', () => runPipeline());
+
+function renderFeedList() {
+  const feeds = loadFeeds();
+  const list = document.getElementById('feed-list');
+  list.innerHTML = '';
+  if (!feeds.length) {
+    const empty = document.createElement('div');
+    empty.className = 'feed-empty';
+    empty.textContent = 'NO FEEDS YET ─ ADD ONE BELOW OR PICK A SAMPLE';
+    list.appendChild(empty);
+    return;
+  }
+  feeds.forEach((f, i) => {
+    const row = document.createElement('div');
+    row.className = 'feed-row';
+    row.innerHTML = `
+      <div class="name">
+        <div class="n"></div>
+        <div class="u"></div>
+      </div>
+      <div class="cat"></div>
+      <button class="del">DEL</button>
+    `;
+    row.querySelector('.n').textContent = f.name;
+    row.querySelector('.u').textContent = f.url;
+    row.querySelector('.cat').textContent = (f.category || 'uncategorized').toUpperCase();
+    row.querySelector('.del').addEventListener('click', () => {
+      const arr = loadFeeds();
+      arr.splice(i, 1);
+      saveFeeds(arr);
+      renderFeedList();
+    });
+    list.appendChild(row);
+  });
+}
+
+function renderSampleFeeds() {
+  const c = document.getElementById('sample-feeds');
+  c.innerHTML = '';
+  const feeds = loadFeeds();
+  const has = new Set(feeds.map(f => f.url));
+  SAMPLE_FEEDS.forEach(s => {
+    if (has.has(s.url)) return;
+    const chip = document.createElement('button');
+    chip.className = 'sample-chip';
+    chip.textContent = `+ ${s.name}`;
+    chip.title = s.url;
+    chip.addEventListener('click', () => {
+      const arr = loadFeeds();
+      if (!arr.find(x => x.url === s.url)) {
+        arr.push({ name: s.name, url: s.url, category: s.category || '' });
+        saveFeeds(arr);
+        renderFeedList();
+        renderSampleFeeds();
+      }
+    });
+    c.appendChild(chip);
+  });
+  if (!c.children.length) {
+    const span = document.createElement('span');
+    span.style.cssText = 'color:#446677;font-size:12px;letter-spacing:1px;';
+    span.textContent = 'all samples already added';
+    c.appendChild(span);
+  }
+}
+
+document.getElementById('btn-add').addEventListener('click', () => {
+  const name = document.getElementById('add-name').value.trim();
+  const url  = document.getElementById('add-url').value.trim();
+  const cat  = document.getElementById('add-cat').value.trim();
+  if (!name || !url) {
+    setStatus('NAME と URL は必須', 'err'); return;
+  }
+  if (!/^https?:\/\//i.test(url)) {
+    setStatus('URL は http:// または https:// から', 'err'); return;
+  }
+  const arr = loadFeeds();
+  if (arr.find(f => f.url === url)) {
+    setStatus('同じ URL のフィードが既にあります', 'err'); return;
+  }
+  arr.push({ name, url, category: cat });
+  saveFeeds(arr);
+  document.getElementById('add-name').value = '';
+  document.getElementById('add-url').value  = '';
+  document.getElementById('add-cat').value  = '';
+  renderFeedList();
+  renderSampleFeeds();
+  setStatus(`ADDED: ${name}`, 'ok');
+});
+
+document.getElementById('btn-clear-all').addEventListener('click', () => {
+  if (!confirm('全てのフィードを削除しますか？')) return;
+  saveFeeds([]);
+  renderFeedList();
+  renderSampleFeeds();
+  setStatus('CLEARED', 'ok');
+});
+
+document.getElementById('btn-save').addEventListener('click', async () => {
+  const proxy = document.getElementById('proxy-url').value.trim();
+  saveProxy(proxy);
+  closeSettings();
+  await runPipeline(setStatus);
+});
+
+function setStatus(msg, kind) {
+  const el = document.getElementById('status-line');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.className = kind || '';
+}
+
+// ESC で settings/detail/welcome を閉じる
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    settingsModal.classList.remove('active');
+    welcomeModal.classList.remove('active');
+    document.getElementById('detail-panel').classList.remove('active');
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+//   FIRST LAUNCH + INITIAL RUN
+// ════════════════════════════════════════════════════════════════════
+document.getElementById('welcome-ok').addEventListener('click', () => {
+  welcomeModal.classList.remove('active');
+  localStorage.setItem(STORAGE_SEEN, '1');
+  openSettings();
+});
+
+(async function init() {
+  if (!localStorage.getItem(STORAGE_SEEN)) {
+    welcomeModal.classList.add('active');
+  }
+  await runPipeline(setStatus);
+})();
+
+// 30 分ごとに自動 refresh
+setInterval(() => runPipeline(setStatus), 30 * 60 * 1000);
+</script>
+
+</body>
+</html>
