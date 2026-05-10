@@ -44,7 +44,7 @@
 - タイトル + 短い要約 (200 文字以下) のみ表示
 - 「OPEN ARTICLE →」 から必ず元サイトへ誘導
 
-詳細は [public/tos.html](./public/tos.html)。
+詳細は [tos.html](./tos.html)。
 
 ## 開発の経緯
 
@@ -63,7 +63,7 @@
 
 ```bash
 git clone https://github.com/Dai-hydrangea/news-in-the-shell.git
-cd news-in-the-shell/public
+cd news-in-the-shell
 python3 -m http.server 8080
 # → http://localhost:8080/
 ```
