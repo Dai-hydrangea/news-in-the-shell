@@ -251,8 +251,18 @@ body {
   padding:8px 14px; font-size:12px; letter-spacing:1px;
   color:#9be7c4; border:1px solid #1a4d3a; background:rgba(0,32,24,0.6);
   cursor:pointer; font-family:inherit;
+  display:inline-flex; align-items:center; gap:8px;
 }
 .sample-chip:hover { border-color:#00ff9f; color:#00ff9f; }
+.sample-chip.standard { color:#aac4d8; border-color:#3a4d5e; background:rgba(20,32,48,0.6); }
+.sample-chip.standard:hover { border-color:#80c8ff; color:#80c8ff; }
+.lic-badge {
+  font-size:9px; padding:2px 6px; letter-spacing:1px;
+  border:1px solid currentColor; opacity:0.7;
+}
+.sample-disclaimer {
+  margin-top:6px; font-size:11px; color:#5a7c92; letter-spacing:0.5px; line-height:1.6;
+}
 
 .note-box {
   margin-top:20px; padding:14px 16px; font-size:12px; color:#7a93a8;
@@ -279,17 +289,18 @@ body {
 
 <div id="hud">
   <div class="title">NEWS IN THE SHELL</div>
-  <div class="sub">REVOLVER MODE :: ◀ ▶ ROTATE :: TAP KEYWORD</div>
+  <div class="sub" data-i18n="hudSub">REVOLVER MODE :: ◀ ▶ ROTATE :: TAP KEYWORD</div>
 </div>
 
 <div id="tabs">
-  <div class="tab active" data-mode="category">CATEGORY</div>
-  <div class="tab" data-mode="source">SOURCE</div>
+  <div class="tab active" data-mode="category" data-i18n="tabCategory">CATEGORY</div>
+  <div class="tab" data-mode="source" data-i18n="tabSource">SOURCE</div>
 </div>
 
 <div id="topright">
-  <button class="icon-btn" id="btn-refresh" title="Refresh feeds">⟳ REFRESH</button>
-  <button class="icon-btn" id="btn-settings" title="Settings">⚙ SETTINGS</button>
+  <button class="icon-btn" id="btn-lang" title="Language">JA / EN</button>
+  <button class="icon-btn" id="btn-refresh" data-i18n="btnRefresh" data-i18n-title="btnRefreshTitle" title="Refresh feeds">⟳ REFRESH</button>
+  <button class="icon-btn" id="btn-settings" data-i18n="btnSettings" data-i18n-title="btnSettingsTitle" title="Settings">⚙ SETTINGS</button>
 </div>
 
 <div id="nav-prev">◀</div>
@@ -299,11 +310,11 @@ body {
 <div id="center-sub">─</div>
 
 <div id="counter">─</div>
-<div id="updated">INITIALIZING...</div>
-<div id="loading">SCANNING NEURAL NETWORK...<span class="small">first run? open ⚙ SETTINGS to add feeds</span></div>
+<div id="updated" data-i18n="initializing">INITIALIZING...</div>
+<div id="loading"><span data-i18n="scanning">SCANNING NEURAL NETWORK...</span><span class="small" data-i18n="firstRunHint">first run? open ⚙ SETTINGS to add feeds</span></div>
 
 <div id="detail-panel">
-  <button id="detail-close">CLOSE ✕</button>
+  <button id="detail-close" data-i18n="closeBtn">CLOSE ✕</button>
   <h1 id="detail-keyword">─</h1>
   <div id="detail-meta-top">─</div>
   <div id="article-list"></div>
@@ -312,25 +323,25 @@ body {
 <!-- ─── Welcome Modal (first launch) ─── -->
 <div class="modal-backdrop" id="welcome-modal">
   <div class="modal">
-    <h2>WELCOME ─ NEWS IN THE SHELL</h2>
-    <div class="modal-sub">RSS keyword orrery, browser-only, BYOF (bring your own feeds)</div>
+    <h2 data-i18n="welcomeTitle">WELCOME ─ NEWS IN THE SHELL</h2>
+    <div class="modal-sub" data-i18n="welcomeSub">RSS keyword orrery, browser-only, BYOF (bring your own feeds)</div>
 
-    <p style="line-height:1.8; color:#aac4d8; font-size:14px; margin-bottom:14px;">
+    <p data-i18n-html="welcomeP1" style="line-height:1.8; color:#aac4d8; font-size:14px; margin-bottom:14px;">
       This tool is a <b style="color:#00e5ff;">visualization shell</b> for RSS feeds you provide.<br>
       It does not bundle any news content — you add the RSS feeds, you choose what to watch.
     </p>
-    <p style="line-height:1.8; color:#aac4d8; font-size:14px; margin-bottom:14px;">
+    <p data-i18n-html="welcomeP2" style="line-height:1.8; color:#aac4d8; font-size:14px; margin-bottom:14px;">
       All article copyrights belong to their original publishers. Tap <b>OPEN ARTICLE →</b> to read on the original site.
     </p>
-    <p style="line-height:1.8; color:#aac4d8; font-size:14px; margin-bottom:14px;">
+    <p data-i18n-html="welcomeP3" style="line-height:1.8; color:#aac4d8; font-size:14px; margin-bottom:14px;">
       Because of browser CORS, you'll need a small proxy. The default points to a public CORS proxy (rate-limited).
       For stable use, set up your own (see <a href="./tos.html" target="_blank" style="color:#00ff9f;">docs</a>).
     </p>
-    <div class="note-box">
+    <div class="note-box" data-i18n-html="welcomeNote">
       MIT License · open source · <a href="https://github.com/Dai-hydrangea/news-in-the-shell" target="_blank">GitHub</a>
     </div>
     <div class="modal-actions">
-      <button class="modal-btn primary" id="welcome-ok">UNDERSTOOD ─ OPEN SETTINGS</button>
+      <button class="modal-btn primary" id="welcome-ok" data-i18n="welcomeOk">UNDERSTOOD ─ OPEN SETTINGS</button>
     </div>
   </div>
 </div>
@@ -338,28 +349,31 @@ body {
 <!-- ─── Settings Modal ─── -->
 <div class="modal-backdrop" id="settings-modal">
   <div class="modal">
-    <h2>FEED SETTINGS</h2>
-    <div class="modal-sub">add the RSS feeds you want to observe ─ globe count auto-scales with categories</div>
+    <h2 data-i18n="settingsTitle">FEED SETTINGS</h2>
+    <div class="modal-sub" data-i18n="settingsSub">add the RSS feeds you want to observe ─ globe count auto-scales with categories</div>
 
-    <label>YOUR FEEDS</label>
+    <label data-i18n="lblYourFeeds">YOUR FEEDS</label>
     <div class="feed-list" id="feed-list"></div>
 
-    <label style="margin-top:24px;">ADD A FEED</label>
+    <label style="margin-top:24px;" data-i18n="lblAddFeed">ADD A FEED</label>
     <div class="row">
-      <input type="text" id="add-name" placeholder="name (e.g. Hacker News)">
-      <input type="text" id="add-cat"  placeholder="category (optional)">
+      <input type="text" id="add-name" data-i18n-ph="phName" placeholder="name (e.g. Hacker News)">
+      <input type="text" id="add-cat"  data-i18n-ph="phCat"  placeholder="category (optional)">
     </div>
     <div class="row" style="margin-top:8px;">
-      <input type="url"  id="add-url"  placeholder="https://example.com/rss.xml">
-      <button class="modal-btn primary" id="btn-add" style="flex:0 0 auto;">+ ADD</button>
+      <input type="url"  id="add-url"  data-i18n-ph="phUrl"  placeholder="https://example.com/rss.xml">
+      <button class="modal-btn primary" id="btn-add" data-i18n="btnAddFeed" style="flex:0 0 auto;">+ ADD</button>
     </div>
 
-    <label style="margin-top:24px;">SAMPLE FEEDS (one-click add)</label>
+    <label style="margin-top:24px;" data-i18n="lblSampleFeeds">SAMPLE FEEDS (one-click add)</label>
     <div class="sample-feeds" id="sample-feeds"></div>
+    <div class="sample-disclaimer" data-i18n="sampleDisclaimer">
+      ※ Mainstream-outlet feeds are referenced under standard RSS-reader convention (no individual contract). Removal requests welcome via GitHub Issues.
+    </div>
 
-    <label style="margin-top:24px;">CORS PROXY URL</label>
-    <input type="url" id="proxy-url" placeholder="https://your-worker.workers.dev/?url=">
-    <div class="note-box">
+    <label style="margin-top:24px;" data-i18n="lblProxy">CORS PROXY URL</label>
+    <input type="url" id="proxy-url" data-i18n-ph="phProxy" placeholder="https://your-worker.workers.dev/?url=">
+    <div class="note-box" data-i18n-html="proxyNote">
       RSS は通常 CORS が無効なので、 ブラウザから直接取得できません。
       proxy URL の末尾にエンコード済 RSS URL が連結される形式 (例: <code>https://corsproxy.io/?</code>) を指定してください。
       自前で立てる手順は <a href="./tos.html" target="_blank">ここ</a> から。
@@ -368,8 +382,8 @@ body {
     <div id="status-line"></div>
 
     <div class="modal-actions">
-      <button class="modal-btn" id="btn-clear-all">CLEAR ALL</button>
-      <button class="modal-btn primary" id="btn-save">SAVE & RELOAD</button>
+      <button class="modal-btn" id="btn-clear-all" data-i18n="btnClearAll">CLEAR ALL</button>
+      <button class="modal-btn primary" id="btn-save" data-i18n="btnSave">SAVE & RELOAD</button>
     </div>
   </div>
 </div>
@@ -396,19 +410,196 @@ import { LineMaterial   } from 'three/addons/lines/LineMaterial.js';
 const STORAGE_FEEDS = 'nits_feeds_v1';
 const STORAGE_PROXY = 'nits_proxy_v1';
 const STORAGE_SEEN  = 'nits_seen_welcome_v1';
+const STORAGE_LANG  = 'nits_lang_v1';
 
 const DEFAULT_PROXY = 'https://corsproxy.io/?';
 
-// CC-friendly / public-domain / dev-friendly samples
+// ════════════════════════════════════════════════════════════════════
+//   I18N (JA / EN)
+// ════════════════════════════════════════════════════════════════════
+const I18N = {
+  en: {
+    hudSub:           'REVOLVER MODE :: ◀ ▶ ROTATE :: TAP KEYWORD',
+    tabCategory:      'CATEGORY',
+    tabSource:        'SOURCE',
+    btnRefresh:       '⟳ REFRESH',
+    btnRefreshTitle:  'Refresh feeds',
+    btnSettings:      '⚙ SETTINGS',
+    btnSettingsTitle: 'Settings',
+    initializing:     'INITIALIZING...',
+    scanning:         'SCANNING NEURAL NETWORK...',
+    firstRunHint:     'first run? open ⚙ SETTINGS to add feeds',
+    closeBtn:         'CLOSE ✕',
+    welcomeTitle:     'WELCOME ─ NEWS IN THE SHELL',
+    welcomeSub:       'RSS keyword orrery, browser-only, BYOF (bring your own feeds)',
+    welcomeP1:        'This tool is a <b style="color:#00e5ff;">visualization shell</b> for RSS feeds you provide.<br>It does not bundle any news content — you add the RSS feeds, you choose what to watch.',
+    welcomeP2:        'All article copyrights belong to their original publishers. Tap <b>OPEN ARTICLE →</b> to read on the original site.',
+    welcomeP3:        'Because of browser CORS, you\'ll need a small proxy. The default points to a public CORS proxy (rate-limited). For stable use, set up your own (see <a href="./tos.html" target="_blank" style="color:#00ff9f;">docs</a>).',
+    welcomeNote:      'MIT License · open source · <a href="https://github.com/Dai-hydrangea/news-in-the-shell" target="_blank">GitHub</a>',
+    welcomeOk:        'UNDERSTOOD ─ OPEN SETTINGS',
+    settingsTitle:    'FEED SETTINGS',
+    settingsSub:      'add the RSS feeds you want to observe ─ globe count auto-scales with categories',
+    lblYourFeeds:     'YOUR FEEDS',
+    lblAddFeed:       'ADD A FEED',
+    phName:           'name (e.g. Hacker News)',
+    phCat:            'category (optional)',
+    phUrl:            'https://example.com/rss.xml',
+    btnAddFeed:       '+ ADD',
+    lblSampleFeeds:   'SAMPLE FEEDS (one-click add)',
+    lblProxy:         'CORS PROXY URL',
+    phProxy:          'https://your-worker.workers.dev/?url=',
+    proxyNote:        'RSS feeds usually don\'t expose CORS headers, so the browser can\'t fetch them directly. Set a proxy URL where the encoded RSS URL is appended at the end (e.g. <code>https://corsproxy.io/?</code>). To run your own, see <a href="./tos.html" target="_blank">the docs</a>.',
+    btnClearAll:      'CLEAR ALL',
+    btnSave:          'SAVE & RELOAD',
+    feedDel:          'DEL',
+    feedUncat:        'UNCATEGORIZED',
+    feedEmpty:        'NO FEEDS YET ─ ADD ONE BELOW OR PICK A SAMPLE',
+    samplesAllAdded:  'all samples already added',
+    errNameUrlReq:    'NAME and URL are required',
+    errUrlScheme:     'URL must start with http:// or https://',
+    errDupUrl:        'a feed with this URL already exists',
+    okAdded:          (n)=>`ADDED: ${n}`,
+    confirmClear:     'Delete all feeds?',
+    okCleared:        'CLEARED',
+    statusOk:         (i,N,name,c)=>`OK [${i}/${N}] ${name} (${c})`,
+    statusFail:       (name,msg)=>`FAIL ${name}: ${msg}`,
+    noFeedsConfigured:'NO FEEDS CONFIGURED ─ open ⚙ SETTINGS',
+    noFeedsLoading:   'NO FEEDS CONFIGURED',
+    noFeedsHint:      'open ⚙ SETTINGS to add RSS feeds',
+    fetchingFeeds:    'FETCHING FEEDS...',
+    counterFmt:       (g,k,a)=>`GLOBES: ${g}  /  KEYWORDS: ${k}  /  ARTICLES: ${a}`,
+    counterEmpty:     'GLOBES: 0',
+    centerSubFmt:     (k,a)=>`${k} KEYWORDS  /  ${a} ARTICLES`,
+    detailMetaFmt:    (n,c)=>`${n} occurrences  /  ${c} articles`,
+    noRelatedArticles:'no related articles',
+    sourcePrefix:     'SOURCE',
+    openArticle:      'OPEN ARTICLE →',
+    generatedFmt:     (when,ok,n)=>`GENERATED: ${when} ─ ${ok}/${n} feeds`,
+    langBtn:          'JA / EN',
+    sampleDisclaimer: '※ Mainstream-outlet feeds are referenced under standard RSS-reader convention (no individual contract). Removal requests welcome via GitHub Issues.',
+    licCc:            'CC',
+    licPublic:        'PUB',
+    licStandard:      'RSS',
+  },
+  ja: {
+    hudSub:           'リボルバー方式 :: ◀ ▶ で回転 :: キーワードをタップ',
+    tabCategory:      'カテゴリ',
+    tabSource:        'ソース',
+    btnRefresh:       '⟳ 更新',
+    btnRefreshTitle:  'フィードを再取得',
+    btnSettings:      '⚙ 設定',
+    btnSettingsTitle: '設定',
+    initializing:     '初期化中...',
+    scanning:         'ニューラルネット走査中...',
+    firstRunHint:     '初回起動: ⚙ 設定 からフィードを追加してください',
+    closeBtn:         '閉じる ✕',
+    welcomeTitle:     'ようこそ ─ NEWS IN THE SHELL',
+    welcomeSub:       'RSS キーワード多球儀。 ブラウザ完結。 BYOF (フィードは自分で追加)',
+    welcomeP1:        'このツールは、 あなたが選んだ RSS フィードを可視化する <b style="color:#00e5ff;">殻 (shell)</b> です。<br>ニュースコンテンツは一切同梱していません。 あなたが追加したフィードを、 あなたが選んだ視点で観測します。',
+    welcomeP2:        'すべての記事の著作権は、 元の配信元に帰属します。 記事を読むときは <b>OPEN ARTICLE →</b> から元サイトでお読みください。',
+    welcomeP3:        'ブラウザの CORS 制約のため、 小さな中継 (proxy) が必要です。 デフォルトは公開 proxy (レート制限あり) を指しています。 安定運用には自前 proxy を立ててください (<a href="./tos.html" target="_blank" style="color:#00ff9f;">手順</a>)。',
+    welcomeNote:      'MIT License · オープンソース · <a href="https://github.com/Dai-hydrangea/news-in-the-shell" target="_blank">GitHub</a>',
+    welcomeOk:        '了解 ─ 設定を開く',
+    settingsTitle:    'フィード設定',
+    settingsSub:      '観測したい RSS フィードを追加してください ─ 球の数は カテゴリに合わせて自動で増減します',
+    lblYourFeeds:     'あなたのフィード',
+    lblAddFeed:       'フィードを追加',
+    phName:           '表示名 (例: 日経テクノロジー)',
+    phCat:            'カテゴリ (任意)',
+    phUrl:            'https://example.com/rss.xml',
+    btnAddFeed:       '+ 追加',
+    lblSampleFeeds:   'サンプルフィード (ワンクリックで追加)',
+    lblProxy:         'CORS Proxy URL',
+    phProxy:          'https://your-worker.workers.dev/?url=',
+    proxyNote:        'RSS は通常 CORS が無効なので、 ブラウザから直接取得できません。 proxy URL の末尾にエンコード済 RSS URL が連結される形式 (例: <code>https://corsproxy.io/?</code>) を指定してください。 自前で立てる手順は <a href="./tos.html" target="_blank">こちら</a>。',
+    btnClearAll:      '全削除',
+    btnSave:          '保存 & 再読込',
+    feedDel:          '削除',
+    feedUncat:        '未分類',
+    feedEmpty:        'フィードがありません ─ 下から追加 / サンプルから選択',
+    samplesAllAdded:  'サンプルはすべて追加済み',
+    errNameUrlReq:    '表示名と URL は必須です',
+    errUrlScheme:     'URL は http:// または https:// から始めてください',
+    errDupUrl:        '同じ URL のフィードが既にあります',
+    okAdded:          (n)=>`追加しました: ${n}`,
+    confirmClear:     '全てのフィードを削除しますか？',
+    okCleared:        '全削除しました',
+    statusOk:         (i,N,name,c)=>`OK [${i}/${N}] ${name} (${c} 件)`,
+    statusFail:       (name,msg)=>`失敗 ${name}: ${msg}`,
+    noFeedsConfigured:'フィード未設定 ─ ⚙ 設定 から追加してください',
+    noFeedsLoading:   'フィード未設定',
+    noFeedsHint:      '⚙ 設定 から RSS フィードを追加してください',
+    fetchingFeeds:    'フィード取得中...',
+    counterFmt:       (g,k,a)=>`球: ${g}  /  キーワード: ${k}  /  記事: ${a}`,
+    counterEmpty:     '球: 0',
+    centerSubFmt:     (k,a)=>`${k} キーワード  /  ${a} 記事`,
+    detailMetaFmt:    (n,c)=>`${n} 出現  /  ${c} 記事`,
+    noRelatedArticles:'関連記事なし',
+    sourcePrefix:     'SOURCE',
+    openArticle:      '記事を開く →',
+    generatedFmt:     (when,ok,n)=>`取得: ${when} ─ ${ok}/${n} feeds`,
+    langBtn:          'JA / EN',
+    sampleDisclaimer: '※ 大手配信元のサンプルは RSS Reader 慣行に基づく参照で、 配信元と個別契約はしていません。 削除依頼は GitHub Issues へ。',
+    licCc:            'CC',
+    licPublic:        '自由',
+    licStandard:      'RSS',
+  },
+};
+
+function detectInitialLang() {
+  const saved = localStorage.getItem(STORAGE_LANG);
+  if (saved === 'ja' || saved === 'en') return saved;
+  return (navigator.language || '').toLowerCase().startsWith('ja') ? 'ja' : 'en';
+}
+let currentLang = detectInitialLang();
+function t(key, ...args) {
+  const dict = I18N[currentLang] || I18N.en;
+  const v = dict[key];
+  if (typeof v === 'function') return v(...args);
+  return (v != null) ? v : key;
+}
+function applyI18n() {
+  document.documentElement.setAttribute('lang', currentLang);
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    el.innerHTML = t(key);
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const key = el.getAttribute('data-i18n-ph');
+    el.placeholder = t(key);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    el.title = t(key);
+  });
+}
+function setLang(lang) {
+  currentLang = (lang === 'ja' ? 'ja' : 'en');
+  localStorage.setItem(STORAGE_LANG, currentLang);
+  applyI18n();
+  // refresh dynamic UI that depends on translations
+  if (typeof rebuildGlobes === 'function' && allItems.length) rebuildGlobes();
+  if (settingsModal && settingsModal.classList.contains('active')) {
+    renderFeedList(); renderSampleFeeds();
+  }
+}
+
+// Sample feeds. license field: 'cc' = Creative Commons, 'public' = public domain or
+// permissively designed for redistribution, 'standard' = mainstream publisher whose
+// RSS is offered under the standard RSS Reader convention (no individual contract).
 const SAMPLE_FEEDS = [
-  { name:'Hacker News',      url:'https://news.ycombinator.com/rss',                    category:'tech' },
-  { name:'arXiv cs.AI',      url:'http://export.arxiv.org/rss/cs.AI',                   category:'academic' },
-  { name:'Wikinews JA',      url:'https://ja.wikinews.org/w/index.php?title=%E7%89%B9%E5%88%A5:%E6%9C%80%E8%BF%91%E3%81%AE%E6%9B%B4%E6%96%B0&feed=rss', category:'wiki' },
-  { name:'Wikinews EN',      url:'https://en.wikinews.org/w/index.php?title=Special:RecentChanges&feed=rss', category:'wiki' },
-  { name:'Lobsters',         url:'https://lobste.rs/rss',                               category:'tech' },
-  { name:'BBC World',        url:'http://feeds.bbci.co.uk/news/world/rss.xml',          category:'world' },
-  { name:'NHK 主要',         url:'https://www.nhk.or.jp/rss/news/cat0.xml',             category:'general' },
-  { name:'GIGAZINE',         url:'https://gigazine.net/news/rss_2.0/',                  category:'tech' },
+  { name:'Hacker News',      url:'https://news.ycombinator.com/rss', category:'tech',     license:'public' },
+  { name:'arXiv cs.AI',      url:'http://export.arxiv.org/rss/cs.AI', category:'academic', license:'cc' },
+  { name:'Wikinews JA',      url:'https://ja.wikinews.org/w/index.php?title=%E7%89%B9%E5%88%A5:%E6%9C%80%E8%BF%91%E3%81%AE%E6%9B%B4%E6%96%B0&feed=rss', category:'wiki', license:'cc' },
+  { name:'Wikinews EN',      url:'https://en.wikinews.org/w/index.php?title=Special:RecentChanges&feed=rss', category:'wiki', license:'cc' },
+  { name:'Lobsters',         url:'https://lobste.rs/rss', category:'tech', license:'public' },
+  { name:'BBC World',        url:'http://feeds.bbci.co.uk/news/world/rss.xml', category:'world', license:'standard' },
+  { name:'NHK 主要',         url:'https://www.nhk.or.jp/rss/news/cat0.xml', category:'general', license:'standard' },
+  { name:'GIGAZINE',         url:'https://gigazine.net/news/rss_2.0/', category:'tech', license:'standard' },
 ];
 
 const STOP_WORDS = new Set([
@@ -732,15 +923,15 @@ async function runPipeline(statusCb) {
   feedsConfig = loadFeeds();
   const proxy = loadProxy();
   if (!feedsConfig.length) {
-    statusCb?.('NO FEEDS CONFIGURED ─ open ⚙ SETTINGS', 'err');
+    statusCb?.(t('noFeedsConfigured'), 'err');
     document.getElementById('loading').innerHTML =
-      'NO FEEDS CONFIGURED<span class="small">open ⚙ SETTINGS to add RSS feeds</span>';
+      `${t('noFeedsLoading')}<span class="small">${t('noFeedsHint')}</span>`;
     document.getElementById('loading').style.display = 'block';
     allItems = [];
     rebuildGlobes();
     return;
   }
-  document.getElementById('loading').textContent = 'FETCHING FEEDS...';
+  document.getElementById('loading').textContent = t('fetchingFeeds');
   document.getElementById('loading').style.display = 'block';
 
   const results = [];
@@ -751,18 +942,18 @@ async function runPipeline(statusCb) {
       const items = parseRssXml(xml, feed);
       results.push(...items);
       okCount++;
-      statusCb?.(`OK [${okCount}/${feedsConfig.length}] ${feed.name} (${items.length})`, 'ok');
+      statusCb?.(t('statusOk', okCount, feedsConfig.length, feed.name, items.length), 'ok');
     } catch (e) {
       failCount++;
       console.warn(`feed failed: ${feed.name}`, e);
-      statusCb?.(`FAIL ${feed.name}: ${e.message}`, 'err');
+      statusCb?.(t('statusFail', feed.name, e.message), 'err');
     }
   }));
 
   allItems = results;
   rebuildGlobes();
   document.getElementById('updated').textContent =
-    `GENERATED: ${new Date().toLocaleString()} ─ ${okCount}/${feedsConfig.length} feeds`;
+    t('generatedFmt', new Date().toLocaleString(), okCount, feedsConfig.length);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -1046,7 +1237,7 @@ function updateCenterLabel() {
   if (!g) return;
   document.getElementById('center-label').textContent = g.label;
   document.getElementById('center-sub').textContent =
-    `${g.node_count} KEYWORDS  /  ${g.total_articles} ARTICLES`;
+    t('centerSubFmt', g.node_count, g.total_articles);
   globesList.forEach((grp, i) => {
     if (grp.userData.label) {
       grp.userData.label.material.opacity = (slotAssignment[i] === 0) ? 0.0 : 0.85;
@@ -1098,7 +1289,7 @@ function rebuildGlobes() {
   if (!allItems.length) {
     globesData = [];
     layoutRevolver();
-    document.getElementById('counter').textContent = 'GLOBES: 0';
+    document.getElementById('counter').textContent = t('counterEmpty');
     return;
   }
   globesData = (currentMode === 'source')
@@ -1108,7 +1299,7 @@ function rebuildGlobes() {
   document.getElementById('loading').style.display = 'none';
   const totalKw = globesData.reduce((s,g) => s + g.node_count, 0);
   document.getElementById('counter').textContent =
-    `GLOBES: ${globesData.length}  /  KEYWORDS: ${totalKw}  /  ARTICLES: ${allItems.length}`;
+    t('counterFmt', globesData.length, totalKw, allItems.length);
 }
 
 document.querySelectorAll('.tab').forEach(tab => {
@@ -1178,11 +1369,14 @@ function showKeywordDetail(keyword) {
   if (!keyword) return;
   document.getElementById('detail-keyword').textContent = keyword.text;
   document.getElementById('detail-meta-top').textContent =
-    `${keyword.count} 出現  /  ${keyword.articles.length} 記事`;
+    t('detailMetaFmt', keyword.count, keyword.articles.length);
   const list = document.getElementById('article-list');
   list.innerHTML = '';
   if (!keyword.articles || !keyword.articles.length) {
-    list.innerHTML = '<p style="color:#446677;font-size:14px;">関連記事なし</p>';
+    const p = document.createElement('p');
+    p.style.cssText = 'color:#446677;font-size:14px;';
+    p.textContent = t('noRelatedArticles');
+    list.appendChild(p);
   } else {
     keyword.articles.forEach(a => {
       const card = document.createElement('div');
@@ -1190,8 +1384,14 @@ function showKeywordDetail(keyword) {
       const titleEl   = document.createElement('div'); titleEl.className   = 'article-title';   titleEl.textContent   = a.title || '─';
       const summaryEl = document.createElement('div'); summaryEl.className = 'article-summary'; summaryEl.textContent = a.summary || '';
       const metaEl    = document.createElement('div'); metaEl.className    = 'article-meta';
-      metaEl.innerHTML = `<span>SOURCE: ${a.source_name || '─'}</span>` +
-                         (a.published_at ? `<span>${(a.published_at||'').slice(0,16)}</span>` : '');
+      const srcSpan = document.createElement('span');
+      srcSpan.textContent = `${t('sourcePrefix')}: ${a.source_name || '─'}`;
+      metaEl.appendChild(srcSpan);
+      if (a.published_at) {
+        const dSpan = document.createElement('span');
+        dSpan.textContent = (a.published_at||'').slice(0,16);
+        metaEl.appendChild(dSpan);
+      }
       card.appendChild(titleEl);
       if (a.summary) card.appendChild(summaryEl);
       card.appendChild(metaEl);
@@ -1199,7 +1399,7 @@ function showKeywordDetail(keyword) {
         const linkEl = document.createElement('a');
         linkEl.className = 'article-link';
         linkEl.href = a.url; linkEl.target = '_blank'; linkEl.rel = 'noopener';
-        linkEl.textContent = 'OPEN ARTICLE →';
+        linkEl.textContent = t('openArticle');
         card.appendChild(linkEl);
       }
       list.appendChild(card);
@@ -1312,6 +1512,9 @@ function closeSettings() { settingsModal.classList.remove('active'); }
 
 document.getElementById('btn-settings').addEventListener('click', openSettings);
 document.getElementById('btn-refresh').addEventListener('click', () => runPipeline());
+document.getElementById('btn-lang').addEventListener('click', () => {
+  setLang(currentLang === 'ja' ? 'en' : 'ja');
+});
 
 function renderFeedList() {
   const feeds = loadFeeds();
@@ -1320,7 +1523,7 @@ function renderFeedList() {
   if (!feeds.length) {
     const empty = document.createElement('div');
     empty.className = 'feed-empty';
-    empty.textContent = 'NO FEEDS YET ─ ADD ONE BELOW OR PICK A SAMPLE';
+    empty.textContent = t('feedEmpty');
     list.appendChild(empty);
     return;
   }
@@ -1333,12 +1536,14 @@ function renderFeedList() {
         <div class="u"></div>
       </div>
       <div class="cat"></div>
-      <button class="del">DEL</button>
+      <button class="del"></button>
     `;
     row.querySelector('.n').textContent = f.name;
     row.querySelector('.u').textContent = f.url;
-    row.querySelector('.cat').textContent = (f.category || 'uncategorized').toUpperCase();
-    row.querySelector('.del').addEventListener('click', () => {
+    row.querySelector('.cat').textContent = (f.category ? f.category.toUpperCase() : t('feedUncat'));
+    const delBtn = row.querySelector('.del');
+    delBtn.textContent = t('feedDel');
+    delBtn.addEventListener('click', () => {
       const arr = loadFeeds();
       arr.splice(i, 1);
       saveFeeds(arr);
@@ -1353,12 +1558,24 @@ function renderSampleFeeds() {
   c.innerHTML = '';
   const feeds = loadFeeds();
   const has = new Set(feeds.map(f => f.url));
-  SAMPLE_FEEDS.forEach(s => {
+  // CC/public first, standard last
+  const order = { cc:0, public:1, standard:2 };
+  const sorted = [...SAMPLE_FEEDS].sort((a,b) => (order[a.license]??9) - (order[b.license]??9));
+  sorted.forEach(s => {
     if (has.has(s.url)) return;
     const chip = document.createElement('button');
-    chip.className = 'sample-chip';
-    chip.textContent = `+ ${s.name}`;
+    chip.className = 'sample-chip' + (s.license === 'standard' ? ' standard' : '');
     chip.title = s.url;
+    const txt = document.createElement('span');
+    txt.textContent = `+ ${s.name}`;
+    chip.appendChild(txt);
+    if (s.license) {
+      const badge = document.createElement('span');
+      badge.className = 'lic-badge';
+      const licKey = s.license === 'cc' ? 'licCc' : (s.license === 'public' ? 'licPublic' : 'licStandard');
+      badge.textContent = t(licKey);
+      chip.appendChild(badge);
+    }
     chip.addEventListener('click', () => {
       const arr = loadFeeds();
       if (!arr.find(x => x.url === s.url)) {
@@ -1373,7 +1590,7 @@ function renderSampleFeeds() {
   if (!c.children.length) {
     const span = document.createElement('span');
     span.style.cssText = 'color:#446677;font-size:12px;letter-spacing:1px;';
-    span.textContent = 'all samples already added';
+    span.textContent = t('samplesAllAdded');
     c.appendChild(span);
   }
 }
@@ -1382,16 +1599,10 @@ document.getElementById('btn-add').addEventListener('click', () => {
   const name = document.getElementById('add-name').value.trim();
   const url  = document.getElementById('add-url').value.trim();
   const cat  = document.getElementById('add-cat').value.trim();
-  if (!name || !url) {
-    setStatus('NAME と URL は必須', 'err'); return;
-  }
-  if (!/^https?:\/\//i.test(url)) {
-    setStatus('URL は http:// または https:// から', 'err'); return;
-  }
+  if (!name || !url) { setStatus(t('errNameUrlReq'), 'err'); return; }
+  if (!/^https?:\/\//i.test(url)) { setStatus(t('errUrlScheme'), 'err'); return; }
   const arr = loadFeeds();
-  if (arr.find(f => f.url === url)) {
-    setStatus('同じ URL のフィードが既にあります', 'err'); return;
-  }
+  if (arr.find(f => f.url === url)) { setStatus(t('errDupUrl'), 'err'); return; }
   arr.push({ name, url, category: cat });
   saveFeeds(arr);
   document.getElementById('add-name').value = '';
@@ -1399,15 +1610,15 @@ document.getElementById('btn-add').addEventListener('click', () => {
   document.getElementById('add-cat').value  = '';
   renderFeedList();
   renderSampleFeeds();
-  setStatus(`ADDED: ${name}`, 'ok');
+  setStatus(t('okAdded', name), 'ok');
 });
 
 document.getElementById('btn-clear-all').addEventListener('click', () => {
-  if (!confirm('全てのフィードを削除しますか？')) return;
+  if (!confirm(t('confirmClear'))) return;
   saveFeeds([]);
   renderFeedList();
   renderSampleFeeds();
-  setStatus('CLEARED', 'ok');
+  setStatus(t('okCleared'), 'ok');
 });
 
 document.getElementById('btn-save').addEventListener('click', async () => {
@@ -1443,6 +1654,7 @@ document.getElementById('welcome-ok').addEventListener('click', () => {
 });
 
 (async function init() {
+  applyI18n();
   if (!localStorage.getItem(STORAGE_SEEN)) {
     welcomeModal.classList.add('active');
   }
