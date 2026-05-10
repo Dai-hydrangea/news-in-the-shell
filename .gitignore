@@ -6,3 +6,12 @@ node_modules/
 # Xcode workspace garbage
 *.xcworkspace/
 xcuserdata/
+
+# Local-only media (notes, drafts, recordings) ─ keep public repo lean
+*.mov
+*.mp4
+*.gif
+ScreenRecording_*
+IMG_*.jpeg
+IMG_*.jpg
+IMG_*.png
