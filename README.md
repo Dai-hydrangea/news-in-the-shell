@@ -9,6 +9,7 @@
 ![byof](https://img.shields.io/badge/feeds-BYOF-ff7eb9)
 
 🌐 **Live demo**: <https://dai-hydrangea.github.io/news-in-the-shell/>
+📝 **note 記事**: [Claude Code で自分のためのツールを作った](https://note.com/dai_hydrangea/n/n001e2451070b) ─ 開発の経緯・設計判断・哲学を書いてます (X リポストで無料で読めます)
 
 ---
 
