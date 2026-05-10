@@ -412,7 +412,12 @@ const STORAGE_PROXY = 'nits_proxy_v1';
 const STORAGE_SEEN  = 'nits_seen_welcome_v1';
 const STORAGE_LANG  = 'nits_lang_v1';
 
-const DEFAULT_PROXY = 'https://corsproxy.io/?';
+const DEFAULT_PROXY = 'https://news-in-the-shell-proxy.daisaku-seto.workers.dev/?url=';
+// Auto-upgrade these legacy/empty values to the new DEFAULT_PROXY on load.
+const LEGACY_DEFAULT_PROXIES = new Set([
+  '',                          // empty (e.g. saved before choosing one)
+  'https://corsproxy.io/?',    // old public-proxy default
+]);
 
 // ════════════════════════════════════════════════════════════════════
 //   I18N (JA / EN)
@@ -644,7 +649,18 @@ function loadFeeds() {
   catch { return []; }
 }
 function saveFeeds(feeds) { localStorage.setItem(STORAGE_FEEDS, JSON.stringify(feeds)); }
-function loadProxy() { return localStorage.getItem(STORAGE_PROXY) || DEFAULT_PROXY; }
+function loadProxy() {
+  const saved = localStorage.getItem(STORAGE_PROXY);
+  // null = never set → use new default
+  if (saved == null) return DEFAULT_PROXY;
+  // legacy/empty values → auto-upgrade and persist
+  if (LEGACY_DEFAULT_PROXIES.has(saved)) {
+    localStorage.setItem(STORAGE_PROXY, DEFAULT_PROXY);
+    return DEFAULT_PROXY;
+  }
+  // user-chosen value → respect it
+  return saved;
+}
 function saveProxy(p) { localStorage.setItem(STORAGE_PROXY, p || ''); }
 
 // ════════════════════════════════════════════════════════════════════
