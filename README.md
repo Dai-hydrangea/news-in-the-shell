@@ -15,25 +15,30 @@
 - キーワードをタップすると、 そのキーワードを含む記事一覧が右からスライドイン
 - カテゴリ別 / ソース別 でビュー切替可能
 - **ユーザーが追加したフィードに合わせて球の数が自動で増減**
+- **日本語 / 英語の即時切替** (右上 `JA / EN` ボタン、 `navigator.language` で初期判定)
 
 ## ブラウザだけで動く
 
 - Three.js / DOMParser / localStorage のみ。 サーバー不要。
 - データはあなたのブラウザの localStorage に保存。 サーバーへの送信なし。
-- 例外: ブラウザ CORS 制約のため、 RSS 取得には CORS proxy が必要。 自前 Cloudflare Worker (5 分・無料) を推奨。
+- 例外: ブラウザ CORS 制約のため、 RSS 取得には CORS proxy が必要。 デフォルトでは作者運用の Cloudflare Worker (`news-in-the-shell-proxy.daisaku-seto.workers.dev`) を使うので、 セットアップ不要で動きます。
 
 ## 使い方
 
-1. <https://dai-hydrangea.github.io/news-in-the-shell/> を開く
+1. <https://dai-hydrangea.github.io/news-in-the-shell/> を開く ─ それだけ。
 2. **⚙ SETTINGS** から:
-   - サンプルフィードをワンクリック追加 (Hacker News / arXiv / Wikinews / NHK 等)
-   - または好きな RSS URL を直接追加
-   - 自前 CORS proxy URL を設定 (任意、 デフォルトは公開 proxy)
+   - サンプルフィードをワンクリック追加 (Hacker News / arXiv / Wikinews / NHK / BBC / GIGAZINE 等)
+     - `CC` / `PUB` / `RSS` のライセンスバッジ付きで CC 系を優先表示
+   - または好きな RSS URL を直接追加 (任意のカテゴリ付き)
+   - CORS proxy URL は変更可能 (作者 proxy / 自前 Worker / 公開 proxy 等)
 3. **SAVE & RELOAD** で観測開始
+4. 30 分ごとに自動更新、 右上 **⟳ REFRESH** で手動更新も可
 
-## 自前 proxy のセットアップ (推奨)
+## 自前 proxy のセットアップ (任意)
 
-`proxy/worker.js` を Cloudflare Worker に貼って Deploy するだけ。 5 分。 詳細は [proxy/README.md](./proxy/README.md)。
+`proxy/worker.js` を Cloudflare Worker に貼って Deploy。 5 分・無料。 詳細は [proxy/README.md](./proxy/README.md)。
+
+作者 proxy はオープン共有していますが、 1 日 10 万 req の Cloudflare 無料枠なので、 重い使い方をする場合は自前で立ててください。
 
 ## 著作権について
 
