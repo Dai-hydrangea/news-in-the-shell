@@ -199,7 +199,14 @@ body {
 #brief-panel-title {
   font-size:14px; letter-spacing:5px; color:#00e5ff;
   text-shadow:0 0 8px rgba(0,229,255,0.7);
+  transition:opacity 0.28s ease-out;
 }
+#brief-summary, #brief-clusters {
+  transition:opacity 0.28s ease-out;
+}
+#brief-panel-title.fading-content,
+#brief-summary.fading-content,
+#brief-clusters.fading-content { opacity:0; }
 #brief-panel-close {
   cursor:pointer; color:#5a8aa8; font-size:12px;
   letter-spacing:2px; padding:4px 10px;
@@ -2128,16 +2135,17 @@ function updateBriefFromCurrent() {
   const g = getMainGlobeData();
   if (g) updateBrief(g);
 }
+let lastBriefGlobeId = null;
+let briefFadeTimer = null;
 function updateBrief(g) {
   const titleEl    = document.getElementById('brief-panel-title');
   const summaryEl  = document.getElementById('brief-summary');
   const clustersEl = document.getElementById('brief-clusters');
-  if (titleEl) titleEl.textContent = `${g.label || '─'} ${t('briefTitle')}`;
+  const panel      = document.getElementById('brief-panel');
   const hasSummary  = !!(g.summary && g.summary.trim());
   const hasClusters = Array.isArray(g.clusters) && g.clusters.length > 0;
   const apiKey = loadGeminiKey();
-  // sprite visibility: only show 観 when main + summary exists
-  // FLOW モード中は animate ループ側で smooth 管理しているのでここではスキップ
+  // sprite visibility: FLOW 中は animate 側で管理
   if (!autoFlow) {
     globesList.forEach((grp, i) => {
       const isMain = (slotAssignment[i] === 0);
@@ -2146,28 +2154,55 @@ function updateBrief(g) {
       if (grp.userData.brief) grp.userData.brief.visible = (isMain && has);
     });
   }
-  if (!hasSummary && !hasClusters) {
-    const msg = apiKey ? t('briefNoData') : t('briefAiNeeded');
-    summaryEl.innerHTML =
-      `<span style="color:#5a7c92;font-style:italic;line-height:1.7;">${msg}</span>`;
-    summaryEl.style.display = 'block';
+
+  const applySwap = () => {
+    if (titleEl) titleEl.textContent = `${g.label || '─'} ${t('briefTitle')}`;
+    if (!hasSummary && !hasClusters) {
+      const msg = apiKey ? t('briefNoData') : t('briefAiNeeded');
+      summaryEl.innerHTML = `<span style="color:#5a7c92;font-style:italic;line-height:1.7;">${msg}</span>`;
+      summaryEl.style.display = 'block';
+      clustersEl.innerHTML = '';
+      return;
+    }
+    summaryEl.textContent = hasSummary ? g.summary : '';
+    summaryEl.style.display = hasSummary ? 'block' : 'none';
     clustersEl.innerHTML = '';
-    return;
-  }
-  summaryEl.textContent = hasSummary ? g.summary : '';
-  summaryEl.style.display = hasSummary ? 'block' : 'none';
-  clustersEl.innerHTML = '';
-  if (hasClusters) {
-    const kwCount = {};
-    (g.nodes || []).forEach(n => { kwCount[n.text] = n.count || 0; });
-    g.clusters.forEach(c => {
-      const total = (c.keywords || []).reduce((s,k) => s + (kwCount[k] || 0), 0);
-      const pill = document.createElement('span');
-      pill.className = 'cluster-pill';
-      pill.innerHTML = `${c.name}<span class="cluster-count">${total}</span>`;
-      pill.addEventListener('click', () => focusCluster(c, g));
-      clustersEl.appendChild(pill);
-    });
+    if (hasClusters) {
+      const kwCount = {};
+      (g.nodes || []).forEach(n => { kwCount[n.text] = n.count || 0; });
+      g.clusters.forEach(c => {
+        const total = (c.keywords || []).reduce((s,k) => s + (kwCount[k] || 0), 0);
+        const pill = document.createElement('span');
+        pill.className = 'cluster-pill';
+        pill.innerHTML = `${c.name}<span class="cluster-count">${total}</span>`;
+        pill.addEventListener('click', () => focusCluster(c, g));
+        clustersEl.appendChild(pill);
+      });
+    }
+  };
+
+  const isOpen = panel.classList.contains('open');
+  const idChanged = lastBriefGlobeId !== null && lastBriefGlobeId !== g.id;
+  lastBriefGlobeId = g.id;
+
+  if (isOpen && idChanged) {
+    if (briefFadeTimer) clearTimeout(briefFadeTimer);
+    titleEl?.classList.add('fading-content');
+    summaryEl.classList.add('fading-content');
+    clustersEl.classList.add('fading-content');
+    briefFadeTimer = setTimeout(() => {
+      applySwap();
+      titleEl?.classList.remove('fading-content');
+      summaryEl.classList.remove('fading-content');
+      clustersEl.classList.remove('fading-content');
+      briefFadeTimer = null;
+    }, 230);
+  } else {
+    if (briefFadeTimer) { clearTimeout(briefFadeTimer); briefFadeTimer = null; }
+    titleEl?.classList.remove('fading-content');
+    summaryEl.classList.remove('fading-content');
+    clustersEl.classList.remove('fading-content');
+    applySwap();
   }
 }
 function focusCluster(cluster, globeData) {
