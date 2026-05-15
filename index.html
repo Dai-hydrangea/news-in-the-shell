@@ -913,6 +913,23 @@ function saveTrCache(c) {
   }
   try { localStorage.setItem(STORAGE_TR_CACHE, JSON.stringify(c)); } catch {}
 }
+
+// Summary cache: { "globeId|lang" → { hash, summary, clusters } }
+// hash = content fingerprint, if unchanged we reuse cached summary (no Gemini call).
+function loadSumCache() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_SUM_CACHE) || '{}'); }
+  catch { return {}; }
+}
+function saveSumCache(c) {
+  try { localStorage.setItem(STORAGE_SUM_CACHE, JSON.stringify(c)); } catch {}
+}
+function globeContentHash(globe) {
+  // top 30 keywords + their counts → fingerprint. Same → skip Gemini.
+  const sig = (globe.nodes || []).slice(0, 30).map(n => `${n.text}:${n.count}`).join('|');
+  let h = 0;
+  for (let i = 0; i < sig.length; i++) h = ((h*31) + sig.charCodeAt(i)) | 0;
+  return h.toString(36);
+}
 function trKey(text) {
   // simple hash to keep cache keys short
   let h = 0;
@@ -1130,15 +1147,30 @@ async function applyAiTranslation(items, statusCb) {
 }
 
 // Per-globe summary + cluster generation via Gemini.
+// Uses content-hash cache to skip API calls when globe content is unchanged.
 async function applyAiSummaries(globes, statusCb) {
-  if (loadAiEngine() !== 'gemini') return globes;       // summary requires Gemini
+  if (loadAiEngine() !== 'gemini') return globes;
   const apiKey = loadGeminiKey();
   if (!apiKey || !globes.length) return globes;
   const targetLang = loadAiLang() || currentLang;
   const langName = { ja:'自然な日本語', en:'natural English', zh:'自然的简体中文' }[targetLang] || 'natural English';
+  const sumCache = loadSumCache();
 
-  statusCb?.(t('aiSummarizing'), 'ok');
+  let apiCalls = 0, cacheHits = 0;
   for (const g of globes) {
+    const cacheKey = `${g.id}|${targetLang}`;
+    const hash = globeContentHash(g);
+    const cached = sumCache[cacheKey];
+    if (cached && cached.hash === hash && cached.summary) {
+      // ⭐ コンテンツ変わってない → API 呼ばずキャッシュ使用
+      g.summary  = cached.summary;
+      g.clusters = cached.clusters || [];
+      cacheHits++;
+      continue;
+    }
+
+    if (apiCalls === 0) statusCb?.(t('aiSummarizing'), 'ok');
+    apiCalls++;
     const keywords = g.nodes.slice(0, 30).map(n => n.text);
     const titles = [];
     const seen = new Set();
@@ -1176,10 +1208,16 @@ async function applyAiSummaries(globes, statusCb) {
       if (summary || clusters.length) {
         g.summary  = summary;
         g.clusters = clusters;
+        // キャッシュに保存 (次回 同じ hash なら API スキップ)
+        sumCache[cacheKey] = { hash, summary, clusters };
       }
     } catch (e) {
       console.warn(`summary for ${g.label} failed`, e);
     }
+  }
+  saveSumCache(sumCache);
+  if (cacheHits > 0) {
+    console.log(`[Summary] ${cacheHits} cache hits, ${apiCalls} API calls`);
   }
   return globes;
 }
@@ -2534,8 +2572,8 @@ document.getElementById('welcome-ok').addEventListener('click', () => {
   await runPipeline(setStatus);
 })();
 
-// 30 分ごとに自動 refresh
-setInterval(() => runPipeline(setStatus), 30 * 60 * 1000);
+// 60 分ごとに自動 refresh (Gemini コスト削減のため 30 → 60 分に変更)
+setInterval(() => runPipeline(setStatus), 60 * 60 * 1000);
 </script>
 
 </body>
