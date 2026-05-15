@@ -392,7 +392,8 @@ body {
 
 <div id="topright">
   <button class="icon-btn" id="btn-lang" title="Language (JA / EN / 中文)">JA</button>
-  <button class="icon-btn" id="btn-flow" title="Merry-go-round flow rotation">▶ FLOW</button>
+  <button class="icon-btn" id="btn-auto" title="Snap rotate every 30 sec">▶ AUTO</button>
+  <button class="icon-btn" id="btn-flow" title="Merry-go-round flow rotation (180 sec/lap)">▶ FLOW</button>
   <button class="icon-btn" id="btn-refresh" data-i18n="btnRefresh" data-i18n-title="btnRefreshTitle" title="Refresh feeds">⟳ REFRESH</button>
   <button class="icon-btn" id="btn-settings" data-i18n="btnSettings" data-i18n-title="btnSettingsTitle" title="Settings">⚙ SETTINGS</button>
 </div>
@@ -2452,12 +2453,29 @@ renderer.domElement.addEventListener('pointerup', e => {
   pState = null;
 });
 
-// ── FLOW モード: メリーゴーランド式 ──
-const FLOW_PERIOD_SEC = 90;
+// ── AUTO (30 秒 snap) + FLOW (180 秒 連続) 二択。 互いに排他。 ──
+const AUTO_INTERVAL_MS = 30000;
+let autoSnapTimer = null;
+function setAutoSnap(on) {
+  if (on) {
+    setFlow(false);
+    autoSnapTimer = setInterval(() => rotateRevolver(+1), AUTO_INTERVAL_MS);
+    const b = document.getElementById('btn-auto');
+    if (b) { b.classList.add('active'); b.textContent = '■ AUTO'; }
+  } else {
+    if (autoSnapTimer) { clearInterval(autoSnapTimer); autoSnapTimer = null; }
+    const b = document.getElementById('btn-auto');
+    if (b) { b.classList.remove('active'); b.textContent = '▶ AUTO'; }
+  }
+}
+document.getElementById('btn-auto')?.addEventListener('click', () => setAutoSnap(autoSnapTimer === null));
+
+const FLOW_PERIOD_SEC = 180;
 let autoFlow = false;
 let flowAngle = 0;
 let flowMainIdx = -1;
 function setFlow(on) {
+  if (on) setAutoSnap(false);
   autoFlow = !!on;
   const btn = document.getElementById('btn-flow');
   if (btn) {
@@ -2489,7 +2507,7 @@ function animate(now) {
     flowAngle += dt * (2 * Math.PI / FLOW_PERIOD_SEC);
     if (flowAngle > 2 * Math.PI) flowAngle -= 2 * Math.PI;
     const N = globesList.length;
-    const r = SAT_RING_RADIUS;
+    const r = SAT_RING_RADIUS * 1.15;          // 重なり防止で広げる
     let bestIdx = 0, bestDist = Infinity;
     globesList.forEach((g, i) => {
       const baseAngle = (i / N) * 2 * Math.PI;
@@ -2499,8 +2517,10 @@ function animate(now) {
       g.position.x = r * Math.sin(t);
       g.position.y = 0;
       g.position.z = r * (Math.cos(t) - 1);
-      const w = (1 + Math.cos(t)) / 2;
-      const scale = SAT_SCALE + (MAIN_SCALE - SAT_SCALE) * w;
+      const cosT = Math.cos(t);
+      const w = Math.max(0, cosT);             // 1 at front, 0 at ±π/2 and back
+      const wSharp = w * w;                    // 二乗で peak を尖らせる
+      const scale = SAT_SCALE + (MAIN_SCALE - SAT_SCALE) * wSharp;
       g.scale.setScalar(scale);
       if (Math.abs(t) < bestDist) { bestDist = Math.abs(t); bestIdx = i; }
     });
