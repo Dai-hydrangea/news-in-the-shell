@@ -516,6 +516,15 @@ body {
       Foreign-language titles will be translated to this language.
     </div>
 
+    <label style="margin-top:18px;" data-i18n="autoRefreshLabel">AUTO-REFRESH</label>
+    <select id="auto-refresh" style="width:100%; padding:12px 14px; font-size:14px; background:rgba(0,8,18,0.8); border:1px solid #003855; color:#dceaf3; font-family:inherit;">
+      <option value="0" data-i18n="autoRefreshOff">Manual only (recommended for AI users)</option>
+      <option value="1" data-i18n="autoRefreshOn">Every 60 min while tab is open</option>
+    </select>
+    <div class="note-box" data-i18n="autoRefreshHelp" style="font-size:11px;border-left-color:#ffd166;background:rgba(255,209,102,0.05);color:#cfc09a;">
+      ⚠ With AI ON, each auto-refresh costs a few yen.
+    </div>
+
     <div id="status-line"></div>
 
     <div class="modal-actions">
@@ -551,6 +560,7 @@ const STORAGE_LANG     = 'nits_lang_v1';
 const STORAGE_GEMINI   = 'nits_gemini_key_v1';   // BYOK: user-supplied API key
 const STORAGE_AI_LANG  = 'nits_ai_lang_v1';      // target language for translation
 const STORAGE_AI_ENGINE= 'nits_ai_engine_v1';    // 'off' | 'mymemory' | 'gemini'
+const STORAGE_AUTOREFRESH = 'nits_autorefresh_v1'; // '1' | '0' (default '0' = manual only)
 const STORAGE_TR_CACHE = 'nits_tr_cache_v1';     // {hash → {lang → translated}}
 const STORAGE_SUM_CACHE= 'nits_sum_cache_v1';    // {globeId+lang → {summary, clusters}}
 
@@ -655,6 +665,11 @@ const I18N = {
     briefNoData:      'No SCAN yet for this category. Will populate on next AI refresh.',
     briefAiNeeded:    'Enable Gemini (⚙ → BYOK) to see daily summary + clusters here.',
     sampleAddAll:     '+ ADD ALL FREE PRESETS',
+    autoRefreshLabel: 'AUTO-REFRESH',
+    autoRefreshOff:   'Manual only (recommended for AI users)',
+    autoRefreshOn:    'Every 60 min while tab is open',
+    autoRefreshHelp:  '⚠ With AI ON, each auto-refresh costs a few yen of Gemini API. Default = manual, click ⟳ REFRESH when you want.',
+    aiCostWarn:       '⚠ You are enabling AI translation/summary. Each refresh consumes Gemini API (typically ¥0.5-3 per refresh on your own free tier). OK?',
   },
   ja: {
     hudSub:           'リボルバー方式 :: ◀ ▶ で回転 :: キーワードをタップ',
@@ -741,6 +756,11 @@ const I18N = {
     briefNoData:      'このカテゴリの SCAN はまだありません。 次の AI 更新で追加されます。',
     briefAiNeeded:    'Gemini を有効化 (⚙ → BYOK) すると ここに概観 + クラスタが出ます。',
     sampleAddAll:     '+ 無料プリセットを全部追加',
+    autoRefreshLabel: '自動更新',
+    autoRefreshOff:   '手動のみ (AI ユーザー推奨)',
+    autoRefreshOn:    'タブ開いてる間 60 分毎',
+    autoRefreshHelp:  '⚠ AI ON の状態で自動更新が走ると、 各 refresh ごとに Gemini API コスト (数円程度) が発生します。 初期値は手動、 ⟳ REFRESH を押した時だけ走ります。',
+    aiCostWarn:       '⚠ AI 翻訳/要約を有効化します。 各 refresh で Gemini API を消費します (あなた自身の無料枠で 1 refresh あたり ¥0.5-3 程度)。 良いですか？',
   },
   zh: {
     hudSub:           '左轮模式 :: ◀ ▶ 旋转 :: 点击关键词',
@@ -827,6 +847,11 @@ const I18N = {
     briefNoData:      '本类别尚无 SCAN。 将在下次 AI 更新时填充。',
     briefAiNeeded:    '启用 Gemini (⚙ → BYOK) 后此处显示概观 + 集群。',
     sampleAddAll:     '+ 一键添加全部免费预设',
+    autoRefreshLabel: '自动刷新',
+    autoRefreshOff:   '仅手动 (AI 用户推荐)',
+    autoRefreshOn:    '打开标签时每 60 分钟',
+    autoRefreshHelp:  '⚠ 启用 AI 时，每次自动刷新会消耗 Gemini API (数日元)。 默认为手动，点击 ⟳ 刷新 才会运行。',
+    aiCostWarn:       '⚠ 您正在启用 AI 翻译/摘要。 每次刷新都会消耗 Gemini API (您自己的免费额度，每次约 ¥0.5-3)。 确定吗？',
   },
 };
 
@@ -903,6 +928,11 @@ function loadAiEngine() {
   return ['off','mymemory','gemini'].includes(v) ? v : 'off';
 }
 function saveAiEngine(e) { localStorage.setItem(STORAGE_AI_ENGINE, e); }
+function loadAutoRefresh() {
+  // default OFF — protects users from surprise API costs while tab is idle.
+  return localStorage.getItem(STORAGE_AUTOREFRESH) === '1';
+}
+function saveAutoRefresh(on) { localStorage.setItem(STORAGE_AUTOREFRESH, on ? '1' : '0'); }
 
 // Detect text language by character ranges (approximate)
 const RE_HIRAGANA = /[぀-ゟ]/;
@@ -2451,10 +2481,11 @@ const welcomeModal  = document.getElementById('welcome-modal');
 function openSettings() {
   renderFeedList();
   renderSampleFeeds();
-  document.getElementById('proxy-url').value = loadProxy();
-  document.getElementById('ai-key').value    = loadGeminiKey();
-  document.getElementById('ai-lang').value   = loadAiLang() || currentLang;
-  document.getElementById('ai-engine').value = loadAiEngine();
+  document.getElementById('proxy-url').value     = loadProxy();
+  document.getElementById('ai-key').value        = loadGeminiKey();
+  document.getElementById('ai-lang').value       = loadAiLang() || currentLang;
+  document.getElementById('ai-engine').value     = loadAiEngine();
+  document.getElementById('auto-refresh').value  = loadAutoRefresh() ? '1' : '0';
   document.getElementById('status-line').textContent = '';
   settingsModal.classList.add('active');
 }
@@ -2570,14 +2601,22 @@ document.getElementById('btn-clear-all').addEventListener('click', () => {
 });
 
 document.getElementById('btn-save').addEventListener('click', async () => {
+  const aiEng    = document.getElementById('ai-engine').value;
+  const prevEng  = loadAiEngine();
+  // OFF → AI ON への切替時にコスト警告 (一度だけ)
+  if (prevEng === 'off' && aiEng !== 'off') {
+    if (!confirm(t('aiCostWarn'))) return;
+  }
   const proxy = document.getElementById('proxy-url').value.trim();
   saveProxy(proxy);
   const apiKey = document.getElementById('ai-key').value.trim();
   saveGeminiKey(apiKey);
   const aiLang = document.getElementById('ai-lang').value;
   if (SUPPORTED_LANGS.includes(aiLang)) saveAiLang(aiLang);
-  const aiEng = document.getElementById('ai-engine').value;
   saveAiEngine(aiEng);
+  const auto = document.getElementById('auto-refresh').value === '1';
+  saveAutoRefresh(auto);
+  setupAutoRefresh();
   closeSettings();
   await runPipeline(setStatus);
 });
@@ -2621,8 +2660,15 @@ document.getElementById('welcome-ok').addEventListener('click', () => {
   await runPipeline(setStatus);
 })();
 
-// 60 分ごとに自動 refresh (Gemini コスト削減のため 30 → 60 分に変更)
-setInterval(() => runPipeline(setStatus), 60 * 60 * 1000);
+// 自動 refresh は初期 OFF。 Settings で ON にしたときだけタイマー起動。
+let autoRefreshTimer = null;
+function setupAutoRefresh() {
+  if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  if (loadAutoRefresh()) {
+    autoRefreshTimer = setInterval(() => runPipeline(setStatus), 60 * 60 * 1000);
+  }
+}
+setupAutoRefresh();
 </script>
 
 </body>
