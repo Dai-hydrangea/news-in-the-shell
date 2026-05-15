@@ -2112,8 +2112,12 @@ function updateCenterLabel() {
   document.getElementById('center-label').textContent = g.label;
   document.getElementById('center-sub').textContent =
     t('centerSubFmt', g.node_count, g.total_articles);
+  // FLOW 中は全ラベル出しっぱなし、 非 FLOW では main だけ非表示
   globesList.forEach((grp, i) => {
-    if (grp.userData.label) {
+    if (!grp.userData.label) return;
+    if (autoFlow) {
+      grp.userData.label.material.opacity = 0.85;
+    } else {
       grp.userData.label.material.opacity = (slotAssignment[i] === 0) ? 0.0 : 0.85;
     }
   });
@@ -2512,6 +2516,11 @@ function setFlow(on) {
   if (btn) {
     btn.classList.toggle('active', autoFlow);
     btn.textContent = autoFlow ? '■ FLOW' : '▶ FLOW';
+  }
+  if (autoFlow) {
+    globesList.forEach(grp => {
+      if (grp.userData.label) grp.userData.label.material.opacity = 0.85;
+    });
   }
   if (!autoFlow) {
     if (savedSlotAssignment) {
