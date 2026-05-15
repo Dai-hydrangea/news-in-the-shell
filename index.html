@@ -2513,37 +2513,39 @@ function animate(now) {
   controls.update();
   updateRevolverAnim(dt);
 
-  // ⭐ FLOW: おにぎり型 (前=平らな base、 後=広がる apex)
+  // ⭐ FLOW: 寿司レーン式 (前=4 球 一列、 後=5 球 小さく下に)
   if (autoFlow && globesList.length && !animating) {
     flowAngle += dt / FLOW_PERIOD_SEC;
     if (flowAngle > 1) flowAngle -= 1;
     const N = globesList.length;
-    const W = 350, D = 1300;
-    const FLOW_MAIN = MAIN_SCALE * 0.75;
-    const FLOW_SAT  = SAT_SCALE;
-    const sideLen = Math.sqrt(W * W + D * D);
-    const total   = 2 * W + 2 * sideLen;
+    const W_F = 750, W_B = 900, D = 1500, Y = 200;
+    const FRONT_FRAC = 0.39, BACK_FRAC = 0.50, END_FRAC = 0.055;
+    const FRONT_PEAK = 1.10, BACK_S = 0.40;
     let bestIdx = 0, bestSq = Infinity;
     globesList.forEach((g, i) => {
       const s = ((i / N) + flowAngle) % 1;
-      const sn = s * total;
-      let x, z;
-      if (sn < 2 * W) { x = -W + sn; z = 0; }
-      else if (sn < 2 * W + sideLen) {
-        const u = (sn - 2 * W) / sideLen;
-        x =  W * (1 - u); z = -D * u;
+      let x, y, z;
+      if (s < FRONT_FRAC) {
+        const t = s / FRONT_FRAC;
+        x = -W_F + 2 * W_F * t; y = 0; z = 0;
+      } else if (s < FRONT_FRAC + END_FRAC) {
+        const t = (s - FRONT_FRAC) / END_FRAC;
+        x =  W_F + (W_B - W_F) * t; y = -Y * t; z = -D * t;
+      } else if (s < FRONT_FRAC + END_FRAC + BACK_FRAC) {
+        const t = (s - FRONT_FRAC - END_FRAC) / BACK_FRAC;
+        x =  W_B - 2 * W_B * t; y = -Y; z = -D;
       } else {
-        const u = (sn - 2 * W - sideLen) / sideLen;
-        x = -W * u; z = -D * (1 - u);
+        const t = (s - FRONT_FRAC - END_FRAC - BACK_FRAC) / END_FRAC;
+        x = -W_B + (W_B - W_F) * t; y = -Y * (1 - t); z = -D * (1 - t);
       }
-      g.position.x = x;
-      g.position.y = 0;
-      g.position.z = z;
-      const xN = x / W, zN = z / D;
-      const ww = Math.exp(-1.4 * (xN * xN + 2 * zN * zN));
-      const scale = FLOW_SAT + (FLOW_MAIN - FLOW_SAT) * ww;
+      g.position.set(x, y, z);
+      const depthFrac = Math.min(1, Math.max(0, (-z + Math.abs(y)) / (D + Y)));
+      const xN = x / W_F;
+      const wx = Math.max(0.5, 1 - xN * xN * 0.5);
+      const frontScale = FRONT_PEAK * wx;
+      const scale = BACK_S + (frontScale - BACK_S) * (1 - depthFrac);
       g.scale.setScalar(scale);
-      const sq = x * x + z * z;
+      const sq = x * x + z * z + y * y;
       if (sq < bestSq) { bestSq = sq; bestIdx = i; }
     });
     if (flowMainIdx !== bestIdx) {
