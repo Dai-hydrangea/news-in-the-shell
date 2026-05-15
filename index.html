@@ -392,6 +392,7 @@ body {
 
 <div id="topright">
   <button class="icon-btn" id="btn-lang" title="Language (JA / EN / 中文)">JA</button>
+  <button class="icon-btn" id="btn-flow" title="Merry-go-round flow rotation">▶ FLOW</button>
   <button class="icon-btn" id="btn-refresh" data-i18n="btnRefresh" data-i18n-title="btnRefreshTitle" title="Refresh feeds">⟳ REFRESH</button>
   <button class="icon-btn" id="btn-settings" data-i18n="btnSettings" data-i18n-title="btnSettingsTitle" title="Settings">⚙ SETTINGS</button>
 </div>
@@ -2451,6 +2452,30 @@ renderer.domElement.addEventListener('pointerup', e => {
   pState = null;
 });
 
+// ── FLOW モード: メリーゴーランド式 ──
+const FLOW_PERIOD_SEC = 90;
+let autoFlow = false;
+let flowAngle = 0;
+let flowMainIdx = -1;
+function setFlow(on) {
+  autoFlow = !!on;
+  const btn = document.getElementById('btn-flow');
+  if (btn) {
+    btn.classList.toggle('active', autoFlow);
+    btn.textContent = autoFlow ? '■ FLOW' : '▶ FLOW';
+  }
+  if (!autoFlow && slots.length && globesList.length) {
+    globesList.forEach((g, i) => {
+      const slot = slots[slotAssignment[i]];
+      if (!slot) return;
+      g.position.copy(slot.pos);
+      g.scale.setScalar(slot.scale);
+    });
+    flowMainIdx = -1;
+  }
+}
+document.getElementById('btn-flow')?.addEventListener('click', () => setFlow(!autoFlow));
+
 let lastT = performance.now();
 function animate(now) {
   requestAnimationFrame(animate);
@@ -2458,6 +2483,34 @@ function animate(now) {
   lastT = now;
   controls.update();
   updateRevolverAnim(dt);
+
+  // ⭐ FLOW: 円周上を等速で滑らかに自動回転
+  if (autoFlow && globesList.length && !animating) {
+    flowAngle += dt * (2 * Math.PI / FLOW_PERIOD_SEC);
+    if (flowAngle > 2 * Math.PI) flowAngle -= 2 * Math.PI;
+    const N = globesList.length;
+    const r = SAT_RING_RADIUS;
+    let bestIdx = 0, bestDist = Infinity;
+    globesList.forEach((g, i) => {
+      const baseAngle = (i / N) * 2 * Math.PI;
+      let t = (baseAngle - flowAngle) % (2 * Math.PI);
+      if (t < -Math.PI) t += 2 * Math.PI;
+      if (t >  Math.PI) t -= 2 * Math.PI;
+      g.position.x = r * Math.sin(t);
+      g.position.y = 0;
+      g.position.z = r * (Math.cos(t) - 1);
+      const w = (1 + Math.cos(t)) / 2;
+      const scale = SAT_SCALE + (MAIN_SCALE - SAT_SCALE) * w;
+      g.scale.setScalar(scale);
+      if (Math.abs(t) < bestDist) { bestDist = Math.abs(t); bestIdx = i; }
+    });
+    if (flowMainIdx !== bestIdx) {
+      flowMainIdx = bestIdx;
+      globesList.forEach((_, i) => { slotAssignment[i] = (i === bestIdx) ? 0 : 1; });
+      updateCenterLabel();
+    }
+  }
+
   globesList.forEach((g, i) => {
     const isMain = (slotAssignment[i] === 0);
     g.rotation.y += dt * (isMain ? 0.10 : 0.25);
