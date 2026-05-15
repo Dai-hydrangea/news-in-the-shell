@@ -134,18 +134,93 @@ body {
 
 /* ─── 詳細パネル ─── */
 #detail-panel {
-  position:fixed; top:0; right:-580px; width:560px; height:100vh; max-width:92vw;
+  position:fixed; top:0; right:0; height:100vh;
+  width:min(560px, 92vw);
   background:linear-gradient(160deg, rgba(0,16,32,0.97), rgba(0,32,64,0.97));
   backdrop-filter:blur(10px);
   border-left:2px solid #00e5ff;
   box-shadow:-4px 0 32px rgba(0,229,255,0.25);
-  transition:right 0.32s ease-out;
+  transform:translateX(100%);
+  transition:transform 0.36s cubic-bezier(0.16, 1, 0.3, 1);
   padding:36px 32px;
   z-index:30;
   overflow-y:auto;
   color:#dceaf3;
 }
-#detail-panel.active { right:0; }
+#detail-panel.active { transform:translateX(0); }
+
+/* ─── BRIEF (観/SCAN) パネル ─── */
+#brief-panel {
+  position:fixed; left:50%; bottom:0;
+  transform:translateX(-50%) translateY(105%);
+  width:min(760px, 94vw);
+  background:linear-gradient(180deg, rgba(0,16,32,0.97), rgba(0,8,18,0.98));
+  backdrop-filter:blur(6px);
+  border:1px solid #00415a;
+  border-top:2px solid #00e5ff;
+  border-bottom:none;
+  padding:28px 30px 34px;
+  z-index:25;
+  color:#dceaf3; font-size:14.5px; line-height:1.9;
+  letter-spacing:0.5px;
+  box-shadow:0 -10px 50px rgba(0,229,255,0.30);
+  max-height:55vh; overflow-y:auto;
+  opacity:0; pointer-events:none;
+  transition:transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.30s ease-out;
+}
+#brief-panel.open {
+  transform:translateX(-50%) translateY(0);
+  opacity:1; pointer-events:auto;
+}
+#brief-panel-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin:-28px -30px 14px;
+  padding:18px 30px 12px;
+  position:sticky; top:-28px; z-index:2;
+  background:linear-gradient(180deg, rgba(0,16,32,0.99), rgba(0,12,24,0.96));
+  border-bottom:1px dashed #00415a;
+}
+#brief-panel-title {
+  font-size:14px; letter-spacing:5px; color:#00e5ff;
+  text-shadow:0 0 8px rgba(0,229,255,0.7);
+}
+#brief-panel-close {
+  cursor:pointer; color:#5a8aa8; font-size:12px;
+  letter-spacing:2px; padding:4px 10px;
+  border:1px solid #003855; background:rgba(0,8,18,0.5);
+  font-family:inherit;
+}
+#brief-panel-close:hover { color:#00e5ff; border-color:#00e5ff; }
+#brief-summary { white-space:pre-wrap; margin-bottom:14px; }
+#brief-clusters {
+  display:flex; flex-wrap:wrap; gap:7px;
+  margin-top:8px; padding-top:14px;
+  border-top:1px dashed #003855;
+}
+.cluster-pill {
+  display:inline-block; padding:6px 12px;
+  font-size:12.5px; letter-spacing:1px;
+  color:#9be7c4; background:rgba(0,40,30,0.5);
+  border:1px solid #2a6a4e;
+  cursor:pointer; transition:all 0.15s;
+}
+.cluster-pill:hover { color:#00ff9f; border-color:#00ff9f; text-shadow:0 0 6px #00ff9f; }
+.cluster-pill .cluster-count { color:#5a8a72; margin-left:6px; font-size:10px; }
+.article-title-orig {
+  font-size:12px; line-height:1.45; color:#5c7c92;
+  margin-top:-4px; margin-bottom:10px; font-style:italic;
+  word-break:break-word;
+}
+@media (max-width: 600px) {
+  #brief-panel {
+    top:64px; bottom:auto;
+    transform:translateX(-50%) translateY(-110%);
+    border-top:none; border-bottom:2px solid #00e5ff;
+    box-shadow:0 10px 40px rgba(0,229,255,0.30);
+    max-height:60vh;
+  }
+  #brief-panel.open { transform:translateX(-50%) translateY(0); }
+}
 #detail-close {
   position:absolute; top:18px; right:18px;
   color:#00e5ff; font-size:15px; font-weight:bold; letter-spacing:2px;
@@ -298,7 +373,7 @@ body {
 </div>
 
 <div id="topright">
-  <button class="icon-btn" id="btn-lang" title="Language">JA / EN</button>
+  <button class="icon-btn" id="btn-lang" title="Language (JA / EN / 中文)">JA</button>
   <button class="icon-btn" id="btn-refresh" data-i18n="btnRefresh" data-i18n-title="btnRefreshTitle" title="Refresh feeds">⟳ REFRESH</button>
   <button class="icon-btn" id="btn-settings" data-i18n="btnSettings" data-i18n-title="btnSettingsTitle" title="Settings">⚙ SETTINGS</button>
 </div>
@@ -318,6 +393,16 @@ body {
   <h1 id="detail-keyword">─</h1>
   <div id="detail-meta-top">─</div>
   <div id="article-list"></div>
+</div>
+
+<!-- ─── BRIEF (観/SCAN) Panel ─── -->
+<div id="brief-panel">
+  <div id="brief-panel-header">
+    <div id="brief-panel-title">観 ─ DAILY SCAN</div>
+    <button id="brief-panel-close" data-i18n="closeBtn">CLOSE ✕</button>
+  </div>
+  <div id="brief-summary"></div>
+  <div id="brief-clusters"></div>
 </div>
 
 <!-- ─── Welcome Modal (first launch) ─── -->
@@ -379,6 +464,32 @@ body {
       自前で立てる手順は <a href="./tos.html" target="_blank">ここ</a> から。
     </div>
 
+    <!-- ── AI BYOK ── -->
+    <label style="margin-top:30px; color:#ffd166;" data-i18n="lblAI">AI ─ BYOK</label>
+    <div class="note-box" data-i18n-html="aiHelp" style="border-left-color:#ffd166;background:rgba(255,209,102,0.05);color:#cfc09a;">
+      AI features (translation + summary) are OFF by default.
+    </div>
+    <label style="margin-top:18px;" data-i18n="aiKeyLabel">GEMINI API KEY</label>
+    <div class="row">
+      <input type="password" id="ai-key" data-i18n-ph="aiKeyPh" placeholder="AIza... (aistudio.google.com)" autocomplete="off">
+    </div>
+    <div style="margin-top:6px; font-size:11px;">
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:#00ff9f;" data-i18n="aiGetKey">Get a free key →</a>
+    </div>
+
+    <label style="margin-top:18px;" data-i18n="aiLangLabel">TRANSLATE TO</label>
+    <div class="row">
+      <select id="ai-lang" style="flex:1; padding:12px 14px; font-size:14px; background:rgba(0,8,18,0.8); border:1px solid #003855; color:#dceaf3; font-family:inherit;">
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+        <option value="zh">简体中文</option>
+      </select>
+      <button class="modal-btn danger" id="btn-clear-key" data-i18n="aiClearKey" style="flex:0 0 auto;">CLEAR KEY</button>
+    </div>
+    <div class="note-box" data-i18n="aiLangHelp" style="font-size:11px;">
+      Foreign-language titles will be translated to this language.
+    </div>
+
     <div id="status-line"></div>
 
     <div class="modal-actions">
@@ -407,10 +518,19 @@ import { LineMaterial   } from 'three/addons/lines/LineMaterial.js';
 // ════════════════════════════════════════════════════════════════════
 //   CONSTANTS
 // ════════════════════════════════════════════════════════════════════
-const STORAGE_FEEDS = 'nits_feeds_v1';
-const STORAGE_PROXY = 'nits_proxy_v1';
-const STORAGE_SEEN  = 'nits_seen_welcome_v1';
-const STORAGE_LANG  = 'nits_lang_v1';
+const STORAGE_FEEDS    = 'nits_feeds_v1';
+const STORAGE_PROXY    = 'nits_proxy_v1';
+const STORAGE_SEEN     = 'nits_seen_welcome_v1';
+const STORAGE_LANG     = 'nits_lang_v1';
+const STORAGE_GEMINI   = 'nits_gemini_key_v1';   // BYOK: user-supplied API key
+const STORAGE_AI_LANG  = 'nits_ai_lang_v1';      // target language for translation
+const STORAGE_TR_CACHE = 'nits_tr_cache_v1';     // {hash → {lang → translated}}
+const STORAGE_SUM_CACHE= 'nits_sum_cache_v1';    // {globeId+lang → {summary, clusters}}
+
+const SUPPORTED_LANGS = ['ja', 'en', 'zh'];      // UI + AI target languages
+const LANG_LABELS = { ja:'JA', en:'EN', zh:'中文' };
+const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const DEFAULT_PROXY = 'https://news-in-the-shell-proxy.daisaku-seto.workers.dev/?url=';
 // Auto-upgrade these legacy/empty values to the new DEFAULT_PROXY on load.
@@ -480,11 +600,29 @@ const I18N = {
     sourcePrefix:     'SOURCE',
     openArticle:      'OPEN ARTICLE →',
     generatedFmt:     (when,ok,n)=>`GENERATED: ${when} ─ ${ok}/${n} feeds`,
-    langBtn:          'JA / EN',
-    sampleDisclaimer: '※ Mainstream-outlet feeds are referenced under standard RSS-reader convention (no individual contract). Removal requests welcome via GitHub Issues.',
+    langBtn:          'EN',
+    sampleDisclaimer: '※ Only freely-redistributable sources (CC / public-domain / commons) are bundled as presets. Add other feeds yourself via ADD A FEED.',
     licCc:            'CC',
     licPublic:        'PUB',
     licStandard:      'RSS',
+    // ── AI ──
+    lblAI:            'AI ─ BYOK (Bring Your Own Key)',
+    aiHelp:           'AI features (translation + summary) are OFF by default. To enable, get a free Gemini API key from Google AI Studio and paste it below. Your key stays in this browser only — no server stores or sees it.',
+    aiKeyLabel:       'GEMINI API KEY',
+    aiKeyPh:          'AIza... (from aistudio.google.com)',
+    aiGetKey:         'Get a free key →',
+    aiLangLabel:      'TRANSLATE TO',
+    aiLangHelp:       'Foreign-language titles will be translated to this language. Costs go on your own Gemini free tier (~1500 req/day).',
+    aiClearKey:       'CLEAR KEY',
+    aiKeyCleared:     'API key cleared',
+    aiOff:            'AI: OFF (add Gemini API key in ⚙ to enable)',
+    aiTranslating:    'Translating titles via Gemini...',
+    aiSummarizing:    'Generating BRIEF via Gemini...',
+    aiTrFailed:       (n)=>`translation skipped (${n} batch failed, retry next refresh)`,
+    briefTitle:       '─ DAILY SCAN',
+    briefNoData:      'No SCAN yet for this category. Will populate on next AI refresh.',
+    briefAiNeeded:    'Enable AI (⚙ → BYOK) to see daily summary + clusters here.',
+    sampleAddAll:     '+ ADD ALL FREE PRESETS',
   },
   ja: {
     hudSub:           'リボルバー方式 :: ◀ ▶ で回転 :: キーワードをタップ',
@@ -543,18 +681,120 @@ const I18N = {
     sourcePrefix:     'SOURCE',
     openArticle:      '記事を開く →',
     generatedFmt:     (when,ok,n)=>`取得: ${when} ─ ${ok}/${n} feeds`,
-    langBtn:          'JA / EN',
-    sampleDisclaimer: '※ 大手配信元のサンプルは RSS Reader 慣行に基づく参照で、 配信元と個別契約はしていません。 削除依頼は GitHub Issues へ。',
+    langBtn:          'JA',
+    sampleDisclaimer: '※ プリセットは再配布が自由なソース (CC / パブリックドメイン / commons) のみ。 それ以外は フィードを追加 から自分で追加してください。',
     licCc:            'CC',
     licPublic:        '自由',
     licStandard:      'RSS',
+    // ── AI ──
+    lblAI:            'AI ─ BYOK (自分の API キーを使用)',
+    aiHelp:           'AI 機能 (翻訳 + 要約) は初期 OFF です。 有効化するには Google AI Studio で無料の Gemini API キーを取得して下の欄に貼り付け。 キーはこのブラウザ内のみに保存され、 サーバには一切送信されません。',
+    aiKeyLabel:       'Gemini API キー',
+    aiKeyPh:          'AIza... (aistudio.google.com で取得)',
+    aiGetKey:         '無料キー取得 →',
+    aiLangLabel:      '翻訳先言語',
+    aiLangHelp:       '他言語のタイトルはこの言語に翻訳されます。 コストは あなたの Gemini 無料枠 (約 1500 req/日) で賄われます。',
+    aiClearKey:       'キーを削除',
+    aiKeyCleared:     'API キーを削除しました',
+    aiOff:            'AI: OFF (⚙ から Gemini API キーを入れると ON)',
+    aiTranslating:    'Gemini でタイトル翻訳中...',
+    aiSummarizing:    'Gemini で BRIEF 生成中...',
+    aiTrFailed:       (n)=>`翻訳スキップ (${n} batch 失敗、 次回 refresh で再試行)`,
+    briefTitle:       '─ DAILY SCAN',
+    briefNoData:      'このカテゴリの SCAN はまだありません。 次の AI 更新で追加されます。',
+    briefAiNeeded:    'AI を有効化 (⚙ → BYOK) すると ここに概観 + クラスタが出ます。',
+    sampleAddAll:     '+ 無料プリセットを全部追加',
+  },
+  zh: {
+    hudSub:           '左轮模式 :: ◀ ▶ 旋转 :: 点击关键词',
+    tabCategory:      '类别',
+    tabSource:        '来源',
+    btnRefresh:       '⟳ 刷新',
+    btnRefreshTitle:  '重新获取订阅',
+    btnSettings:      '⚙ 设置',
+    btnSettingsTitle: '设置',
+    initializing:     '初始化中...',
+    scanning:         '扫描神经网络...',
+    firstRunHint:     '首次启动: 请打开 ⚙ 设置 添加订阅源',
+    closeBtn:         '关闭 ✕',
+    welcomeTitle:     '欢迎 ─ NEWS IN THE SHELL',
+    welcomeSub:       'RSS 关键词多球仪。 仅在浏览器内运行。 BYOF (自带订阅源)',
+    welcomeP1:        '此工具是您所提供 RSS 订阅源的 <b style="color:#00e5ff;">可视化外壳</b>。<br>本工具不内置任何新闻内容 — 由您添加 RSS 订阅源，由您决定观测对象。',
+    welcomeP2:        '所有文章版权归原发布方所有。 阅读时请通过 <b>OPEN ARTICLE →</b> 跳转至原站阅读。',
+    welcomeP3:        '由于浏览器 CORS 限制，需要一个小型代理 (proxy)。 默认指向公共 CORS 代理 (有速率限制)。 长期使用请自建代理 (参见 <a href="./tos.html" target="_blank" style="color:#00ff9f;">文档</a>)。',
+    welcomeNote:      'MIT License · 开源 · <a href="https://github.com/Dai-hydrangea/news-in-the-shell" target="_blank">GitHub</a>',
+    welcomeOk:        '了解 ─ 打开设置',
+    settingsTitle:    '订阅设置',
+    settingsSub:      '添加您想观测的 RSS 订阅源 ─ 球体数量随类别自动调整',
+    lblYourFeeds:     '我的订阅',
+    lblAddFeed:       '添加订阅',
+    phName:           '名称 (例: 科学网)',
+    phCat:            '类别 (可选)',
+    phUrl:            'https://example.com/rss.xml',
+    btnAddFeed:       '+ 添加',
+    lblSampleFeeds:   '示例订阅 (一键添加)',
+    lblProxy:         'CORS 代理 URL',
+    phProxy:          'https://your-worker.workers.dev/?url=',
+    proxyNote:        'RSS 通常不开放 CORS，浏览器无法直接抓取。 请填写以已编码 RSS URL 结尾的代理 (例: <code>https://corsproxy.io/?</code>)。 自建步骤见 <a href="./tos.html" target="_blank">文档</a>。',
+    btnClearAll:      '全部清除',
+    btnSave:          '保存并重新加载',
+    feedDel:          '删除',
+    feedUncat:        '未分类',
+    feedEmpty:        '暂无订阅 ─ 请在下方添加 或 从示例中选择',
+    samplesAllAdded:  '所有示例都已添加',
+    errNameUrlReq:    '名称和 URL 都是必填项',
+    errUrlScheme:     'URL 必须以 http:// 或 https:// 开头',
+    errDupUrl:        '相同 URL 的订阅已存在',
+    okAdded:          (n)=>`已添加: ${n}`,
+    confirmClear:     '是否删除全部订阅？',
+    okCleared:        '已全部删除',
+    statusOk:         (i,N,name,c)=>`成功 [${i}/${N}] ${name} (${c} 条)`,
+    statusFail:       (name,msg)=>`失败 ${name}: ${msg}`,
+    noFeedsConfigured:'未配置订阅 ─ 请打开 ⚙ 设置 添加',
+    noFeedsLoading:   '未配置订阅',
+    noFeedsHint:      '请打开 ⚙ 设置 添加 RSS 订阅',
+    fetchingFeeds:    '获取订阅中...',
+    counterFmt:       (g,k,a)=>`球体: ${g}  /  关键词: ${k}  /  文章: ${a}`,
+    counterEmpty:     '球体: 0',
+    centerSubFmt:     (k,a)=>`${k} 关键词  /  ${a} 文章`,
+    detailMetaFmt:    (n,c)=>`${n} 次出现  /  ${c} 文章`,
+    noRelatedArticles:'暂无相关文章',
+    sourcePrefix:     '来源',
+    openArticle:      '打开文章 →',
+    generatedFmt:     (when,ok,n)=>`生成: ${when} ─ ${ok}/${n} 个订阅`,
+    langBtn:          '中文',
+    sampleDisclaimer: '※ 预设订阅仅包含可自由再分发的来源 (CC / 公有领域 / commons)。 其他订阅请通过 添加订阅 自行添加。',
+    licCc:            'CC',
+    licPublic:        '自由',
+    licStandard:      'RSS',
+    // ── AI ──
+    lblAI:            'AI ─ BYOK (自带 API 密钥)',
+    aiHelp:           'AI 功能 (翻译 + 摘要) 默认关闭。 启用需从 Google AI Studio 获取免费的 Gemini API 密钥并粘贴到下方。 密钥仅保存在本浏览器中，不会上传至任何服务器。',
+    aiKeyLabel:       'Gemini API 密钥',
+    aiKeyPh:          'AIza... (aistudio.google.com 获取)',
+    aiGetKey:         '获取免费密钥 →',
+    aiLangLabel:      '翻译目标语言',
+    aiLangHelp:       '其他语种的标题将被翻译为此语言。 费用计入 您的 Gemini 免费额度 (约 1500 次/日)。',
+    aiClearKey:       '清除密钥',
+    aiKeyCleared:     'API 密钥已清除',
+    aiOff:            'AI: 关闭 (在 ⚙ 中输入 Gemini API 密钥即可开启)',
+    aiTranslating:    '正在用 Gemini 翻译标题...',
+    aiSummarizing:    '正在用 Gemini 生成 BRIEF...',
+    aiTrFailed:       (n)=>`翻译跳过 (${n} 个批次失败，下次刷新重试)`,
+    briefTitle:       '─ DAILY SCAN',
+    briefNoData:      '本类别尚无 SCAN。 将在下次 AI 更新时填充。',
+    briefAiNeeded:    '启用 AI (⚙ → BYOK) 后此处显示概观 + 集群。',
+    sampleAddAll:     '+ 一键添加全部免费预设',
   },
 };
 
 function detectInitialLang() {
   const saved = localStorage.getItem(STORAGE_LANG);
-  if (saved === 'ja' || saved === 'en') return saved;
-  return (navigator.language || '').toLowerCase().startsWith('ja') ? 'ja' : 'en';
+  if (SUPPORTED_LANGS.includes(saved)) return saved;
+  const nav = (navigator.language || '').toLowerCase();
+  if (nav.startsWith('ja')) return 'ja';
+  if (nav.startsWith('zh')) return 'zh';
+  return 'en';
 }
 let currentLang = detectInitialLang();
 function t(key, ...args) {
@@ -583,28 +823,247 @@ function applyI18n() {
   });
 }
 function setLang(lang) {
-  currentLang = (lang === 'ja' ? 'ja' : 'en');
+  currentLang = SUPPORTED_LANGS.includes(lang) ? lang : 'en';
   localStorage.setItem(STORAGE_LANG, currentLang);
   applyI18n();
-  // refresh dynamic UI that depends on translations
+  // update lang button to show NEXT lang in cycle as hint
+  const btn = document.getElementById('btn-lang');
+  if (btn) btn.textContent = LANG_LABELS[currentLang] || currentLang.toUpperCase();
   if (typeof rebuildGlobes === 'function' && allItems.length) rebuildGlobes();
   if (settingsModal && settingsModal.classList.contains('active')) {
     renderFeedList(); renderSampleFeeds();
   }
+  // If panel open with content, refresh its summary text from cached AI
+  if (typeof updateBriefFromCurrent === 'function') updateBriefFromCurrent();
+}
+function cycleLang() {
+  const idx = SUPPORTED_LANGS.indexOf(currentLang);
+  setLang(SUPPORTED_LANGS[(idx + 1) % SUPPORTED_LANGS.length]);
 }
 
-// Sample feeds. license field: 'cc' = Creative Commons, 'public' = public domain or
-// permissively designed for redistribution, 'standard' = mainstream publisher whose
-// RSS is offered under the standard RSS Reader convention (no individual contract).
+// ════════════════════════════════════════════════════════════════════
+//   AI: BYOK Gemini integration (translation + summarization)
+//   Key is stored in user's browser only (localStorage).
+// ════════════════════════════════════════════════════════════════════
+function loadGeminiKey() { return localStorage.getItem(STORAGE_GEMINI) || ''; }
+function saveGeminiKey(k) {
+  if (k) localStorage.setItem(STORAGE_GEMINI, k);
+  else   localStorage.removeItem(STORAGE_GEMINI);
+}
+function loadAiLang() {
+  return localStorage.getItem(STORAGE_AI_LANG) || currentLang;
+}
+function saveAiLang(l) { localStorage.setItem(STORAGE_AI_LANG, l); }
+
+// Detect text language by character ranges (approximate)
+const RE_HIRAGANA = /[぀-ゟ]/;
+const RE_KATAKANA = /[゠-ヿ]/;
+const RE_HAN      = /[一-鿿]/;
+function detectTextLang(text) {
+  if (!text) return 'unknown';
+  if (RE_HIRAGANA.test(text) || RE_KATAKANA.test(text)) return 'ja';
+  // pure han (no kana) → assume zh (could be misclassified for kanji-heavy ja titles,
+  // but those are rare for RSS news headlines)
+  if (RE_HAN.test(text)) return 'zh';
+  return 'en';
+}
+
+// Translation cache: { 'sha-prefix' → { ja: '...', en: '...', zh: '...' } }
+function loadTrCache() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_TR_CACHE) || '{}'); }
+  catch { return {}; }
+}
+function saveTrCache(c) {
+  // cap size to avoid blowing localStorage (5MB quota)
+  const entries = Object.entries(c);
+  if (entries.length > 3000) {
+    // keep last 2500 — losing oldest is fine (RSS rotates)
+    c = Object.fromEntries(entries.slice(-2500));
+  }
+  try { localStorage.setItem(STORAGE_TR_CACHE, JSON.stringify(c)); } catch {}
+}
+function trKey(text) {
+  // simple hash to keep cache keys short
+  let h = 0;
+  for (let i = 0; i < text.length; i++) h = ((h*31) + text.charCodeAt(i)) | 0;
+  return h.toString(36);
+}
+
+async function geminiCall(prompt, apiKey, { jsonMode = true, retries = 3 } = {}) {
+  const body = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.2,
+      ...(jsonMode ? { responseMimeType: 'application/json' } : {}),
+    },
+  };
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const r = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(apiKey)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (r.status === 429 || r.status === 503) {
+        if (attempt + 1 < retries) {
+          await new Promise(res => setTimeout(res, (2 ** attempt) * 1000));
+          continue;
+        }
+      }
+      if (!r.ok) {
+        const errText = await r.text().catch(() => '');
+        throw new Error(`HTTP ${r.status}: ${errText.slice(0,200)}`);
+      }
+      const payload = await r.json();
+      const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) throw new Error('empty response');
+      return jsonMode ? JSON.parse(text) : text;
+    } catch (e) {
+      if (attempt + 1 >= retries) throw e;
+      await new Promise(res => setTimeout(res, (2 ** attempt) * 600));
+    }
+  }
+}
+
+// Translate a batch of titles → return list of translated strings (same order/length).
+async function translateBatch(titles, targetLang, apiKey) {
+  const langName = { ja:'Japanese (日本語)', en:'English', zh:'Chinese (简体中文)' }[targetLang] || 'English';
+  const prompt =
+    `You are a professional translator. Translate the following news titles into ${langName}.\n` +
+    `- Keep proper nouns (company / product / person / place) in their commonly-used form\n` +
+    `- For academic titles, preserve technical terminology\n` +
+    `- Output ONLY a JSON array of translated strings, same length and order as the input.\n\n` +
+    `Input:\n${JSON.stringify(titles)}`;
+  const result = await geminiCall(prompt, apiKey);
+  if (!Array.isArray(result) || result.length !== titles.length) {
+    throw new Error('length mismatch');
+  }
+  return result.map(s => String(s));
+}
+
+// Walk through all items, translate titles that aren't in target language.
+// Uses cache aggressively to minimize API calls.
+async function applyAiTranslation(items, statusCb) {
+  const apiKey = loadGeminiKey();
+  if (!apiKey) return items;
+  const targetLang = loadAiLang() || currentLang;
+  const cache = loadTrCache();
+  const toTranslate = [];      // [{idx, text}]
+  for (let i = 0; i < items.length; i++) {
+    const orig = items[i].title || '';
+    const detected = detectTextLang(orig);
+    items[i].lang = detected;
+    items[i].title_orig = orig;
+    if (detected === targetLang) {
+      items[i].title_ja = orig;            // canonical "title in target lang" field
+      continue;
+    }
+    // already cached?
+    const k = trKey(orig);
+    if (cache[k] && cache[k][targetLang]) {
+      items[i].title_ja = cache[k][targetLang];
+      continue;
+    }
+    toTranslate.push({ idx: i, text: orig, key: k });
+  }
+  if (!toTranslate.length) return items;
+
+  statusCb?.(t('aiTranslating'), 'ok');
+  const BATCH = 20;
+  let failed = 0;
+  for (let start = 0; start < toTranslate.length; start += BATCH) {
+    const chunk = toTranslate.slice(start, start + BATCH);
+    try {
+      const translated = await translateBatch(chunk.map(c => c.text), targetLang, apiKey);
+      chunk.forEach((c, j) => {
+        const trans = translated[j];
+        items[c.idx].title_ja = trans;
+        cache[c.key] = cache[c.key] || {};
+        cache[c.key][targetLang] = trans;
+      });
+    } catch (e) {
+      failed++;
+      console.warn('translate batch failed', e);
+      // fallback: keep original title as title_ja so keywords still extract
+      chunk.forEach(c => { items[c.idx].title_ja = c.text; });
+    }
+  }
+  saveTrCache(cache);
+  if (failed) statusCb?.(t('aiTrFailed', failed), 'err');
+  return items;
+}
+
+// Per-globe summary + cluster generation via Gemini.
+async function applyAiSummaries(globes, statusCb) {
+  const apiKey = loadGeminiKey();
+  if (!apiKey || !globes.length) return globes;
+  const targetLang = loadAiLang() || currentLang;
+  const langName = { ja:'自然な日本語', en:'natural English', zh:'自然的简体中文' }[targetLang] || 'natural English';
+
+  statusCb?.(t('aiSummarizing'), 'ok');
+  for (const g of globes) {
+    const keywords = g.nodes.slice(0, 30).map(n => n.text);
+    const titles = [];
+    const seen = new Set();
+    for (const n of g.nodes.slice(0, 15)) {
+      for (const a of (n.articles || []).slice(0, 2)) {
+        const tt = a.title;
+        if (tt && !seen.has(tt)) { titles.push(tt); seen.add(tt); }
+        if (titles.length >= 15) break;
+      }
+      if (titles.length >= 15) break;
+    }
+    if (!keywords.length || !titles.length) continue;
+
+    const prompt =
+      `You are a news analyst. For the category "${g.label}", produce:\n` +
+      `1) summary: 3-5 lines of ${langName} (each line 50-70 chars, complete sentences). Include concrete events, actors, and numbers.\n` +
+      `2) clusters: 3-6 themed groups, each with name (<=15 chars) and keywords (3-8 items, chosen ONLY from the input keyword list).\n\n` +
+      `Input keywords:\n${JSON.stringify(keywords)}\n\n` +
+      `Sample article titles:\n${JSON.stringify(titles)}\n\n` +
+      `Output JSON only: {"summary": "...", "clusters": [{"name": "...", "keywords": ["...","..."]}]}`;
+    try {
+      const r = await geminiCall(prompt, apiKey);
+      if (!r || typeof r !== 'object') continue;
+      const kwSet = new Set(keywords);
+      const summary  = (r.summary || '').trim();
+      const clusters = Array.isArray(r.clusters)
+        ? r.clusters
+            .filter(c => c && typeof c === 'object' && c.name && Array.isArray(c.keywords))
+            .map(c => ({
+              name: String(c.name).trim(),
+              keywords: c.keywords.filter(k => kwSet.has(k)),
+            }))
+            .filter(c => c.name && c.keywords.length)
+        : [];
+      if (summary || clusters.length) {
+        g.summary  = summary;
+        g.clusters = clusters;
+      }
+    } catch (e) {
+      console.warn(`summary for ${g.label} failed`, e);
+    }
+  }
+  return globes;
+}
+
+// ⭐ プリセットは「フリーで再配布可能」なソースのみ厳格に。
+// 'cc' = Creative Commons, 'public' = public domain or permissively reusable.
+// 商業メディアは追加しません — ユーザーが ADD A FEED で自分で追加してください。
 const SAMPLE_FEEDS = [
-  { name:'Hacker News',      url:'https://news.ycombinator.com/rss', category:'tech',     license:'public' },
-  { name:'arXiv cs.AI',      url:'http://export.arxiv.org/rss/cs.AI', category:'academic', license:'cc' },
-  { name:'Wikinews JA',      url:'https://ja.wikinews.org/w/index.php?title=%E7%89%B9%E5%88%A5:%E6%9C%80%E8%BF%91%E3%81%AE%E6%9B%B4%E6%96%B0&feed=rss', category:'wiki', license:'cc' },
-  { name:'Wikinews EN',      url:'https://en.wikinews.org/w/index.php?title=Special:RecentChanges&feed=rss', category:'wiki', license:'cc' },
-  { name:'Lobsters',         url:'https://lobste.rs/rss', category:'tech', license:'public' },
-  { name:'BBC World',        url:'http://feeds.bbci.co.uk/news/world/rss.xml', category:'world', license:'standard' },
-  { name:'NHK 主要',         url:'https://www.nhk.or.jp/rss/news/cat0.xml', category:'general', license:'standard' },
-  { name:'GIGAZINE',         url:'https://gigazine.net/news/rss_2.0/', category:'tech', license:'standard' },
+  // ── Community-driven tech (public) ──
+  { name:'Hacker News',         url:'https://news.ycombinator.com/rss',                                                  category:'tech',     license:'public' },
+  { name:'Lobsters',            url:'https://lobste.rs/rss',                                                              category:'tech',     license:'public' },
+  // ── arXiv (CC by license) ──
+  { name:'arXiv cs.AI',         url:'http://export.arxiv.org/rss/cs.AI',                                                  category:'academic', license:'cc' },
+  { name:'arXiv cs.LG',         url:'http://export.arxiv.org/rss/cs.LG',                                                  category:'academic', license:'cc' },
+  { name:'arXiv cs.CL',         url:'http://export.arxiv.org/rss/cs.CL',                                                  category:'academic', license:'cc' },
+  { name:'arXiv cs.CV',         url:'http://export.arxiv.org/rss/cs.CV',                                                  category:'academic', license:'cc' },
+  { name:'arXiv stat.ML',       url:'http://export.arxiv.org/rss/stat.ML',                                                category:'academic', license:'cc' },
+  // ── Wikinews (CC, 3 languages) ──
+  { name:'Wikinews EN',         url:'https://en.wikinews.org/w/index.php?title=Special:RecentChanges&feed=rss',           category:'wiki',     license:'cc' },
+  { name:'Wikinews JA',         url:'https://ja.wikinews.org/w/index.php?title=%E7%89%B9%E5%88%A5:%E6%9C%80%E8%BF%91%E3%81%AE%E6%9B%B4%E6%96%B0&feed=rss', category:'wiki', license:'cc' },
+  { name:'Wikinews ZH',         url:'https://zh.wikinews.org/w/index.php?title=Special:RecentChanges&feed=rss',           category:'wiki',     license:'cc' },
 ];
 
 const STOP_WORDS = new Set([
@@ -880,11 +1339,25 @@ function buildGlobeData(id, label, color, items) {
 
   const positions = springLayout(top.length, edgesRaw, GLOBE_RADIUS);
 
-  const nodes = top.map(([w,count],i) => ({
-    text: w, count,
-    articles: (wordArticles.get(w) || []).slice(0, TOP_ARTICLES_PER_KEYWORD),
-    pos: positions[i] || [0,0,0],
-  }));
+  const nodes = top.map(([w,count],i) => {
+    const arts = wordArticles.get(w) || [];
+    const foreignCount = arts.filter(a => a.title_orig && a.title_orig !== a.title).length;
+    const trRatio = arts.length ? foreignCount / arts.length : 0;
+    // pick majority foreign lang for badge text (EN / JA / ZH)
+    const langCount = {};
+    for (const a of arts) {
+      const L = a.lang;
+      if (L && L !== (loadAiLang() || currentLang)) langCount[L] = (langCount[L]||0)+1;
+    }
+    const dominant = Object.entries(langCount).sort((a,b)=>b[1]-a[1])[0]?.[0];
+    return {
+      text: w, count,
+      articles: arts.slice(0, TOP_ARTICLES_PER_KEYWORD),
+      pos: positions[i] || [0,0,0],
+      tr_ratio: +trRatio.toFixed(2),
+      tr_lang_short: dominant ? dominant.toUpperCase() : '',
+    };
+  });
   const edges = edgesRaw.map(([a,b,w]) => ({ a: top[a][0], b: top[b][0], weight: w }));
 
   return {
@@ -966,8 +1439,23 @@ async function runPipeline(statusCb) {
     }
   }));
 
+  // AI translation (BYOK, opt-in): translates titles to current target lang
+  await applyAiTranslation(results, statusCb);
+  // Use title_ja (canonical translated title) as the displayed title
+  for (const r of results) {
+    if (r.title_ja) {
+      if (r.title_ja !== r.title) r.title_orig = r.title;
+      r.title = r.title_ja;
+    }
+  }
   allItems = results;
   rebuildGlobes();
+  // AI per-globe summary + clusters (after globes built)
+  try {
+    await applyAiSummaries(globesData, statusCb);
+    // refresh BRIEF visibility now that summaries arrived
+    updateBriefFromCurrent();
+  } catch (e) { console.warn('summarize failed', e); }
   document.getElementById('updated').textContent =
     t('generatedFmt', new Date().toLocaleString(), okCount, feedsConfig.length);
 }
@@ -1084,13 +1572,20 @@ function buildSlots(count) {
   return slots;
 }
 
-function makeKeywordSprite(text, fontSize, ratio, colorHex) {
+function makeKeywordSprite(node, fontSize, ratio, colorHex) {
+  const text = node.text;
+  // foreign-origin badge: TR ratio >= 0.3 (article had to be translated)
+  const isForeign = (node.tr_ratio || 0) >= 0.3;
+  const badgeText = isForeign ? (node.tr_lang_short || 'TR') : '';
   const canvas = document.createElement('canvas');
   const ctx    = canvas.getContext('2d');
   const fs     = Math.round(Math.max(14, Math.min(70, fontSize)));
+  const bfs    = Math.max(9, Math.round(fs * 0.42));
   ctx.font     = `bold ${fs}px "Share Tech Mono", "Courier New", monospace`;
   const tw     = ctx.measureText(text).width;
-  canvas.width  = Math.ceil(tw) + 28;
+  ctx.font     = `bold ${bfs}px "Share Tech Mono", "Courier New", monospace`;
+  const bw     = isForeign ? ctx.measureText(badgeText).width + 10 : 0;
+  canvas.width  = Math.ceil(tw) + 28 + bw;
   canvas.height = fs + 18;
   ctx.font      = `bold ${fs}px "Share Tech Mono", "Courier New", monospace`;
   const hex = colorHex.toString(16).padStart(6, '0');
@@ -1106,10 +1601,67 @@ function makeKeywordSprite(text, fontSize, ratio, colorHex) {
   ctx.fillText(text, 14, fs + 4);
   ctx.shadowBlur  = 4 + ratio * 6;
   ctx.fillText(text, 14, fs + 4);
+  if (isForeign) {
+    ctx.font = `bold ${bfs}px "Share Tech Mono", "Courier New", monospace`;
+    ctx.fillStyle = `rgba(255,200,80,${Math.min(1, alpha + 0.15)})`;
+    ctx.shadowColor = 'rgba(255,200,80,0.85)';
+    ctx.shadowBlur  = 8;
+    ctx.fillText(badgeText, 14 + tw + 6, fs + 4 - Math.round(fs * 0.18));
+    ctx.shadowBlur = 0;
+  }
   const tex = new THREE.CanvasTexture(canvas);
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
   const sp  = new THREE.Sprite(mat);
   sp.scale.set(canvas.width * 0.30, canvas.height * 0.30, 1);
+  return sp;
+}
+
+// "観 / SCAN" core sprite — floats inside the globe (depth-tested)
+function makeScanSprite(colorHex) {
+  const W = 220, H = 180;
+  const canvas = document.createElement('canvas');
+  canvas.width = W * 2; canvas.height = H * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  const hex = colorHex.toString(16).padStart(6, '0');
+  const r = parseInt(hex.slice(0,2), 16);
+  const g = parseInt(hex.slice(2,4), 16);
+  const b = parseInt(hex.slice(4,6), 16);
+  const rgba = (a) => `rgba(${r},${g},${b},${a})`;
+  const inset = 0.20;
+  const oct = () => {
+    ctx.beginPath();
+    ctx.moveTo(W*inset, 0); ctx.lineTo(W*(1-inset), 0);
+    ctx.lineTo(W, H*0.5);   ctx.lineTo(W*(1-inset), H);
+    ctx.lineTo(W*inset, H); ctx.lineTo(0, H*0.5);
+    ctx.closePath();
+  };
+  const grad = ctx.createRadialGradient(W/2, H/2, 8, W/2, H/2, W*0.62);
+  grad.addColorStop(0, rgba(0.30)); grad.addColorStop(0.5, rgba(0.12));
+  grad.addColorStop(1, 'rgba(0,8,18,0.50)');
+  oct(); ctx.fillStyle = grad; ctx.fill();
+  oct(); ctx.shadowColor = rgba(0.95); ctx.shadowBlur = 22;
+  ctx.strokeStyle = rgba(0.92); ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.save();
+  ctx.translate(W/2, H/2); ctx.scale(0.88, 0.80); ctx.translate(-W/2, -H/2);
+  oct(); ctx.strokeStyle = rgba(0.30); ctx.lineWidth = 1; ctx.stroke();
+  ctx.restore();
+  ctx.shadowColor = rgba(0.9); ctx.shadowBlur = 16;
+  ctx.fillStyle = rgba(1.0);
+  ctx.font = 'bold 78px "Hiragino Mincho ProN", "YuMincho", "Share Tech Mono", serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('観', W/2, H/2 - 6);
+  ctx.shadowBlur = 6;
+  ctx.font = 'bold 14px "Share Tech Mono", monospace';
+  ctx.fillStyle = rgba(0.7);
+  ctx.fillText('SCAN', W/2, H/2 + 46);
+  ctx.shadowBlur = 0;
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+  const sp  = new THREE.Sprite(mat);
+  sp.scale.set(58, 47, 1);
+  sp.userData = { isBrief: true };
   return sp;
 }
 
@@ -1169,7 +1721,7 @@ function buildGlobe(globeData) {
   globeData.nodes.forEach(node => {
     const ratio = Math.pow((node.count - minCount) / range, 0.7);
     const fs = 18 + ratio * 38;
-    const sprite = makeKeywordSprite(node.text, fs, ratio, colorHex);
+    const sprite = makeKeywordSprite(node, fs, ratio, colorHex);
     const pos = node.pos || [0, 0, 0];
     sprite.position.set(pos[0], pos[1], pos[2]);
     sprite.userData = { keyword: node, globeId: globeData.id };
@@ -1207,6 +1759,14 @@ function buildGlobe(globeData) {
   label.position.set(0, radius + 60, 0);
   group.add(label);
   group.userData.label = label;
+
+  // ⭐ 観 / SCAN core sprite (depth-tested, hides behind keywords)
+  const scan = makeScanSprite(colorHex);
+  scan.position.set(0, 0, 0);
+  scan.visible = false;
+  scan.userData.globeData = globeData;
+  group.add(scan);
+  group.userData.brief = scan;
 
   return group;
 }
@@ -1275,6 +1835,72 @@ function updateCenterLabel() {
     if (grp.userData.label) {
       grp.userData.label.material.opacity = (slotAssignment[i] === 0) ? 0.0 : 0.85;
     }
+  });
+  updateBrief(g);
+}
+
+// ── BRIEF (観/SCAN) panel ──
+function setBriefOpen(open) {
+  document.getElementById('brief-panel').classList.toggle('open', open);
+}
+function updateBriefFromCurrent() {
+  const g = getMainGlobeData();
+  if (g) updateBrief(g);
+}
+function updateBrief(g) {
+  const titleEl    = document.getElementById('brief-panel-title');
+  const summaryEl  = document.getElementById('brief-summary');
+  const clustersEl = document.getElementById('brief-clusters');
+  if (titleEl) titleEl.textContent = `${g.label || '─'} ${t('briefTitle')}`;
+  const hasSummary  = !!(g.summary && g.summary.trim());
+  const hasClusters = Array.isArray(g.clusters) && g.clusters.length > 0;
+  const apiKey = loadGeminiKey();
+  // sprite visibility: only show 観 when main + summary exists
+  globesList.forEach((grp, i) => {
+    const isMain = (slotAssignment[i] === 0);
+    const data   = grp.userData?.globeData;
+    const has    = !!(data && (data.summary || (data.clusters && data.clusters.length)));
+    if (grp.userData.brief) grp.userData.brief.visible = (isMain && has);
+  });
+  if (!hasSummary && !hasClusters) {
+    const msg = apiKey ? t('briefNoData') : t('briefAiNeeded');
+    summaryEl.innerHTML =
+      `<span style="color:#5a7c92;font-style:italic;line-height:1.7;">${msg}</span>`;
+    summaryEl.style.display = 'block';
+    clustersEl.innerHTML = '';
+    return;
+  }
+  summaryEl.textContent = hasSummary ? g.summary : '';
+  summaryEl.style.display = hasSummary ? 'block' : 'none';
+  clustersEl.innerHTML = '';
+  if (hasClusters) {
+    const kwCount = {};
+    (g.nodes || []).forEach(n => { kwCount[n.text] = n.count || 0; });
+    g.clusters.forEach(c => {
+      const total = (c.keywords || []).reduce((s,k) => s + (kwCount[k] || 0), 0);
+      const pill = document.createElement('span');
+      pill.className = 'cluster-pill';
+      pill.innerHTML = `${c.name}<span class="cluster-count">${total}</span>`;
+      pill.addEventListener('click', () => focusCluster(c, g));
+      clustersEl.appendChild(pill);
+    });
+  }
+}
+function focusCluster(cluster, globeData) {
+  const kws = cluster.keywords || [];
+  const nodes = (globeData.nodes || []).filter(n => kws.includes(n.text));
+  if (!nodes.length) return;
+  const articles = [];
+  const seen = new Set();
+  nodes.forEach(n => (n.articles || []).forEach(a => {
+    const k = a.url || a.title;
+    if (k && !seen.has(k)) { seen.add(k); articles.push(a); }
+  }));
+  const totalCount = nodes.reduce((s,n) => s + (n.count||0), 0);
+  showKeywordDetail({
+    text: cluster.name,
+    count: totalCount,
+    articles: articles.slice(0, 30),
   });
 }
 
@@ -1380,9 +2006,17 @@ function getHit(e) {
   pointer.y = (y / innerHeight) * -2 + 1;
   raycaster.setFromCamera(pointer, camera);
   const sprites = [];
-  orreryGroup.traverse(o => { if (o.isSprite && o.userData.keyword) sprites.push(o); });
+  orreryGroup.traverse(o => {
+    if (!o.isSprite) return;
+    if (o.userData.keyword) sprites.push(o);
+    if (o.userData.isBrief && o.visible) sprites.push(o);
+  });
   const sprHits = raycaster.intersectObjects(sprites);
-  if (sprHits.length) return { type: 'keyword', node: sprHits[0].object.userData.keyword };
+  if (sprHits.length) {
+    const top = sprHits[0].object;
+    if (top.userData.keyword) return { type: 'keyword', node: top.userData.keyword };
+    if (top.userData.isBrief) return { type: 'brief' };
+  }
   const meshes = [];
   globesList.forEach(g => {
     g.children.forEach(c => {
@@ -1426,6 +2060,12 @@ function showKeywordDetail(keyword) {
         metaEl.appendChild(dSpan);
       }
       card.appendChild(titleEl);
+      if (a.title_orig && a.title_orig !== a.title) {
+        const origEl = document.createElement('div');
+        origEl.className = 'article-title-orig';
+        origEl.textContent = a.title_orig;
+        card.appendChild(origEl);
+      }
       if (a.summary) card.appendChild(summaryEl);
       card.appendChild(metaEl);
       if (a.url) {
@@ -1444,6 +2084,24 @@ function showKeywordDetail(keyword) {
 document.getElementById('detail-close').addEventListener('click', () => {
   document.getElementById('detail-panel').classList.remove('active');
 });
+document.getElementById('brief-panel-close').addEventListener('click', () => setBriefOpen(false));
+
+// 観 sprite pulse + float animation
+{
+  const tickPulse = () => {
+    const tsec = performance.now() * 0.001;
+    globesList.forEach(g => {
+      const b = g.userData?.brief;
+      if (!b || !b.visible) return;
+      const pulse = 1.0 + Math.sin(tsec * 1.6) * 0.06;
+      b.scale.set(58 * pulse, 47 * pulse, 1);
+      b.position.y = Math.sin(tsec * 0.7) * 10;
+      b.material.opacity = 0.78 + 0.20 * (0.5 + 0.5 * Math.sin(tsec * 1.2));
+    });
+    requestAnimationFrame(tickPulse);
+  };
+  requestAnimationFrame(tickPulse);
+}
 
 renderer.domElement.addEventListener('pointerdown', e => {
   const hit = getHit(e);
@@ -1485,17 +2143,24 @@ renderer.domElement.addEventListener('pointerup', e => {
   const dt = Date.now() - pState.startT;
   if (pState.mode === 'tap-candidate' && dist <= 10 && dt <= 400) {
     const hit = pState.initialHit;
-    if (hit) {
-      if (hit.type === 'keyword') showKeywordDetail(hit.node);
-      else if (hit.type === 'globe') {
-        const i = globesList.indexOf(hit.group);
-        if (i >= 0) {
-          const N = globesList.length;
-          const curSlot = slotAssignment[i];
-          if (curSlot !== 0) {
-            const ccw = curSlot, cw = N - curSlot;
-            if (cw <= ccw) rotateRevolver(+cw); else rotateRevolver(-ccw);
-          }
+    if (!hit) {
+      // 何もない場所をタップ → 開いてるパネルを閉じる
+      if (document.getElementById('brief-panel').classList.contains('open')) setBriefOpen(false);
+      if (document.getElementById('detail-panel').classList.contains('active')) {
+        document.getElementById('detail-panel').classList.remove('active');
+      }
+    } else if (hit.type === 'keyword') {
+      showKeywordDetail(hit.node);
+    } else if (hit.type === 'brief') {
+      setBriefOpen(true);
+    } else if (hit.type === 'globe') {
+      const i = globesList.indexOf(hit.group);
+      if (i >= 0) {
+        const N = globesList.length;
+        const curSlot = slotAssignment[i];
+        if (curSlot !== 0) {
+          const ccw = curSlot, cw = N - curSlot;
+          if (cw <= ccw) rotateRevolver(+cw); else rotateRevolver(-ccw);
         }
       }
     }
@@ -1538,6 +2203,8 @@ function openSettings() {
   renderFeedList();
   renderSampleFeeds();
   document.getElementById('proxy-url').value = loadProxy();
+  document.getElementById('ai-key').value    = loadGeminiKey();
+  document.getElementById('ai-lang').value   = loadAiLang() || currentLang;
   document.getElementById('status-line').textContent = '';
   settingsModal.classList.add('active');
 }
@@ -1545,9 +2212,7 @@ function closeSettings() { settingsModal.classList.remove('active'); }
 
 document.getElementById('btn-settings').addEventListener('click', openSettings);
 document.getElementById('btn-refresh').addEventListener('click', () => runPipeline());
-document.getElementById('btn-lang').addEventListener('click', () => {
-  setLang(currentLang === 'ja' ? 'en' : 'ja');
-});
+document.getElementById('btn-lang').addEventListener('click', cycleLang);
 
 function renderFeedList() {
   const feeds = loadFeeds();
@@ -1657,8 +2322,18 @@ document.getElementById('btn-clear-all').addEventListener('click', () => {
 document.getElementById('btn-save').addEventListener('click', async () => {
   const proxy = document.getElementById('proxy-url').value.trim();
   saveProxy(proxy);
+  const apiKey = document.getElementById('ai-key').value.trim();
+  saveGeminiKey(apiKey);
+  const aiLang = document.getElementById('ai-lang').value;
+  if (SUPPORTED_LANGS.includes(aiLang)) saveAiLang(aiLang);
   closeSettings();
   await runPipeline(setStatus);
+});
+
+document.getElementById('btn-clear-key').addEventListener('click', () => {
+  saveGeminiKey('');
+  document.getElementById('ai-key').value = '';
+  setStatus(t('aiKeyCleared'), 'ok');
 });
 
 function setStatus(msg, kind) {
