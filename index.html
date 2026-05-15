@@ -127,6 +127,22 @@ body {
   position:fixed; width:60px; height:60px; pointer-events:none; z-index:7;
   border:1px solid rgba(0,229,255,0.45);
 }
+
+/* AI 翻訳進捗バッジ (右上、 球より下) */
+#ai-progress {
+  position:fixed; top:62px; right:22px; z-index:11;
+  display:none; padding:7px 14px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px; letter-spacing:1.5px;
+  color:#ffd166; text-shadow:0 0 6px rgba(255,209,102,0.6);
+  background:rgba(0,8,18,0.85);
+  border:1px solid rgba(255,209,102,0.45);
+  pointer-events:none;
+}
+#ai-progress.active { display:block; }
+@media (max-width: 600px) {
+  #ai-progress { top:auto; bottom:108px; right:14px; }
+}
 #corner-tl { top:8px; left:8px;     border-right:none; border-bottom:none; }
 #corner-tr { top:8px; right:8px;    border-left:none;  border-bottom:none; }
 #corner-bl { bottom:8px; left:8px;  border-right:none; border-top:none; }
@@ -361,6 +377,8 @@ body {
 <div id="scan-beam"></div>
 <div id="corner-tl"></div><div id="corner-tr"></div>
 <div id="corner-bl"></div><div id="corner-br"></div>
+
+<div id="ai-progress"></div>
 
 <div id="hud">
   <div class="title">NEWS IN THE SHELL</div>
@@ -890,13 +908,23 @@ function saveAiEngine(e) { localStorage.setItem(STORAGE_AI_ENGINE, e); }
 const RE_HIRAGANA = /[぀-ゟ]/;
 const RE_KATAKANA = /[゠-ヿ]/;
 const RE_HAN      = /[一-鿿]/;
-function detectTextLang(text) {
+function detectTextLang(text, feedLangHint) {
   if (!text) return 'unknown';
   if (RE_HIRAGANA.test(text) || RE_KATAKANA.test(text)) return 'ja';
-  // pure han (no kana) → assume zh (could be misclassified for kanji-heavy ja titles,
-  // but those are rare for RSS news headlines)
-  if (RE_HAN.test(text)) return 'zh';
+  if (RE_HAN.test(text)) {
+    // pure han (no kana) → ambiguous between ja and zh
+    // feed URL hint overrides if available (.jp domains → ja)
+    if (feedLangHint === 'ja') return 'ja';
+    if (feedLangHint === 'zh') return 'zh';
+    return 'zh';            // default guess
+  }
   return 'en';
+}
+function inferFeedLang(url) {
+  const u = (url || '').toLowerCase();
+  if (/\.jp[\/:]|:\/\/ja\.|\/ja\/|co\.jp/.test(u)) return 'ja';
+  if (/\.cn[\/:]|\.tw[\/:]|:\/\/zh\.|\/zh\//.test(u)) return 'zh';
+  return null;
 }
 
 // Translation cache: { 'sha-prefix' → { ja: '...', en: '...', zh: '...' } }
@@ -980,13 +1008,9 @@ async function geminiCall(prompt, apiKey, { jsonMode = true, retries = 3, timeou
 
 // Translate a batch of titles → return list of translated strings (same order/length).
 async function translateBatchGemini(titles, targetLang, apiKey, opts = {}) {
-  const langName = { ja:'Japanese (日本語)', en:'English', zh:'Chinese (简体中文)' }[targetLang] || 'English';
-  const prompt =
-    `You are a professional translator. Translate the following news titles into ${langName}.\n` +
-    `- Keep proper nouns (company / product / person / place) in their commonly-used form\n` +
-    `- For academic titles, preserve technical terminology\n` +
-    `- Output ONLY a JSON array of translated strings, same length and order as the input.\n\n` +
-    `Input:\n${JSON.stringify(titles)}`;
+  const lang = { ja:'ja', en:'en', zh:'zh-Hans' }[targetLang] || 'en';
+  // ⭐ 圧縮プロンプト: 命令を最小限に
+  const prompt = `Translate to ${lang}, preserve proper nouns, JSON array same order:\n${JSON.stringify(titles)}`;
   const result = await geminiCall(prompt, apiKey, opts);
   if (!Array.isArray(result) || result.length !== titles.length) {
     throw new Error('length mismatch');
@@ -1028,22 +1052,23 @@ async function translateBatchMyMemory(titlesWithLang, targetLang) {
 }
 
 // Walk through all items, translate titles that aren't in target language.
-// Uses cache aggressively to minimize API calls. Engine: off | mymemory | gemini.
-async function applyAiTranslation(items, statusCb) {
+// onBatchDone(): optional callback fired after each batch so caller can update UI progressively.
+async function applyAiTranslation(items, statusCb, onBatchDone) {
   const engine = loadAiEngine();
   if (engine === 'off') return items;
   const apiKey = loadGeminiKey();
-  if (engine === 'gemini' && !apiKey) return items;       // no key → no-op
+  if (engine === 'gemini' && !apiKey) return items;
   const targetLang = loadAiLang() || currentLang;
   const cache = loadTrCache();
   const toTranslate = [];      // [{idx, text, sourceLang, key}]
   for (let i = 0; i < items.length; i++) {
     const orig = items[i].title || '';
-    const detected = detectTextLang(orig);
+    // feed URL hint で all-kanji JA タイトルを正しく ja 判定する
+    const detected = detectTextLang(orig, items[i].feed_lang);
     items[i].lang = detected;
     items[i].title_orig = orig;
     if (detected === targetLang) {
-      items[i].title_ja = orig;
+      items[i].title_ja = orig;            // ⭐ 母国語タイトルは翻訳スキップ
       continue;
     }
     const k = trKey(orig);
@@ -1059,8 +1084,12 @@ async function applyAiTranslation(items, statusCb) {
   let failed = 0;
   const total = toTranslate.length;
   const loadingEl = document.getElementById('loading');
+  const badgeEl   = document.getElementById('ai-progress');
+  if (badgeEl) badgeEl.classList.add('active');
   const setProgress = (done) => {
-    if (loadingEl) loadingEl.textContent = t('aiTranslatingProgress', done, total);
+    const msg = t('aiTranslatingProgress', done, total);
+    if (loadingEl) loadingEl.textContent = msg;
+    if (badgeEl)   badgeEl.textContent   = msg;
   };
   setProgress(0);
 
@@ -1068,6 +1097,7 @@ async function applyAiTranslation(items, statusCb) {
     // per-item, concurrent, progress as items finish
     let idx = 0, done = 0;
     const CONCURRENCY = 3;
+    const REBUILD_EVERY = 20;
     const workers = Array.from({ length: CONCURRENCY }, async () => {
       while (true) {
         const i = idx++;
@@ -1079,6 +1109,9 @@ async function applyAiTranslation(items, statusCb) {
         cache[c.key][targetLang] = items[c.idx].title_ja;
         done++;
         setProgress(done);
+        if (done % REBUILD_EVERY === 0) {
+          try { onBatchDone?.(); } catch {}
+        }
       }
     });
     try { await Promise.all(workers); }
@@ -1086,6 +1119,7 @@ async function applyAiTranslation(items, statusCb) {
       failed++;
       console.warn('mymemory failed', e);
     }
+    try { onBatchDone?.(); } catch {}    // final
   } else {
     // gemini: 2 並列 + 失敗バッチは最後にまとめて retry (パイプライン処理)
     const BATCH = 40;            // 1 リクエストで 40 件まとめる (前 20 → 倍)
@@ -1121,6 +1155,7 @@ async function applyAiTranslation(items, statusCb) {
         }
         done += chunk.length;
         setProgress(done);
+        try { onBatchDone?.(); } catch {}     // ⭐ バッチ毎に UI 更新
       }
     };
     await Promise.all(Array.from({ length: CONCURRENCY }, worker));
@@ -1138,11 +1173,13 @@ async function applyAiTranslation(items, statusCb) {
           // 諦めて原題のまま (キーワード抽出はできる)
           chunk.forEach(c => { items[c.idx].title_ja = c.text; });
         }
+        try { onBatchDone?.(); } catch {}
       }
     }
   }
   saveTrCache(cache);
   if (failed) statusCb?.(t('aiTrFailed', failed), 'err');
+  if (badgeEl) badgeEl.classList.remove('active');         // 完了で badge 消す
   return items;
 }
 
@@ -1171,26 +1208,26 @@ async function applyAiSummaries(globes, statusCb) {
 
     if (apiCalls === 0) statusCb?.(t('aiSummarizing'), 'ok');
     apiCalls++;
-    const keywords = g.nodes.slice(0, 30).map(n => n.text);
+    // ⭐ 圧縮: top 20 KW + 10 titles に絞る (前 30 + 15)
+    const keywords = g.nodes.slice(0, 20).map(n => n.text);
     const titles = [];
     const seen = new Set();
-    for (const n of g.nodes.slice(0, 15)) {
+    for (const n of g.nodes.slice(0, 10)) {
       for (const a of (n.articles || []).slice(0, 2)) {
         const tt = a.title;
         if (tt && !seen.has(tt)) { titles.push(tt); seen.add(tt); }
-        if (titles.length >= 15) break;
+        if (titles.length >= 10) break;
       }
-      if (titles.length >= 15) break;
+      if (titles.length >= 10) break;
     }
     if (!keywords.length || !titles.length) continue;
 
+    // ⭐ 圧縮プロンプト: instruction を最短に、 形式は schema で示す
     const prompt =
-      `You are a news analyst. For the category "${g.label}", produce:\n` +
-      `1) summary: 3-5 lines of ${langName} (each line 50-70 chars, complete sentences). Include concrete events, actors, and numbers.\n` +
-      `2) clusters: 3-6 themed groups, each with name (<=15 chars) and keywords (3-8 items, chosen ONLY from the input keyword list).\n\n` +
-      `Input keywords:\n${JSON.stringify(keywords)}\n\n` +
-      `Sample article titles:\n${JSON.stringify(titles)}\n\n` +
-      `Output JSON only: {"summary": "...", "clusters": [{"name": "...", "keywords": ["...","..."]}]}`;
+      `Category: ${g.label}. Lang: ${langName}.\n` +
+      `JSON: {"summary":"3-5 lines (50-70ch each), concrete events/actors","clusters":[{"name":"<=15ch","keywords":["from KW only"]}] (3-6)}\n` +
+      `KW: ${JSON.stringify(keywords)}\n` +
+      `T: ${JSON.stringify(titles)}`;
     try {
       const r = await geminiCall(prompt, apiKey);
       if (!r || typeof r !== 'object') continue;
@@ -1365,6 +1402,7 @@ function parseRssXml(xml, feed) {
     out.push({
       title, url: link, summary: stripHtml(desc).slice(0,200),
       published_at: date, source_name: feed.name, category: feed.category || feed.name,
+      feed_lang: inferFeedLang(feed.url),
     });
   });
 
@@ -1382,6 +1420,7 @@ function parseRssXml(xml, feed) {
     out.push({
       title, url: link, summary: stripHtml(summary).slice(0,200),
       published_at: date, source_name: feed.name, category: feed.category || feed.name,
+      feed_lang: inferFeedLang(feed.url),
     });
   });
 
@@ -1639,21 +1678,31 @@ async function runPipeline(statusCb) {
     }
   }));
 
-  // AI translation (BYOK, opt-in): translates titles to current target lang
-  await applyAiTranslation(results, statusCb);
-  // Use title_ja (canonical translated title) as the displayed title
-  for (const r of results) {
-    if (r.title_ja) {
-      if (r.title_ja !== r.title) r.title_orig = r.title;
-      r.title = r.title_ja;
-    }
-  }
+  // ⭐ 先に元言語のまま render (翻訳完了前にスフィアを見せる)
   allItems = results;
   rebuildGlobes();
-  // AI per-globe summary + clusters (after globes built)
+
+  // 翻訳: バッチ完了毎に title を差し替えて rebuildGlobes (徐々に母国語化)
+  const swapTitles = () => {
+    for (const r of results) {
+      if (r.title_ja && r.title !== r.title_ja) {
+        r.title_orig = r.title;
+        r.title = r.title_ja;
+      }
+    }
+  };
+  await applyAiTranslation(results, statusCb, () => {
+    swapTitles();
+    rebuildGlobes();
+  });
+  // 最終 swap (キャッシュ hit のみだったケースでも反映)
+  swapTitles();
+  allItems = results;
+  rebuildGlobes();
+
+  // AI per-globe summary + clusters (cache hit でほぼゼロ call)
   try {
     await applyAiSummaries(globesData, statusCb);
-    // refresh BRIEF visibility now that summaries arrived
     updateBriefFromCurrent();
   } catch (e) { console.warn('summarize failed', e); }
   document.getElementById('updated').textContent =
