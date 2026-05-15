@@ -464,17 +464,25 @@ body {
       自前で立てる手順は <a href="./tos.html" target="_blank">ここ</a> から。
     </div>
 
-    <!-- ── AI BYOK ── -->
-    <label style="margin-top:30px; color:#ffd166;" data-i18n="lblAI">AI ─ BYOK</label>
+    <!-- ── AI ── -->
+    <label style="margin-top:30px; color:#ffd166;" data-i18n="lblAI">AI ─ Translation + BRIEF</label>
     <div class="note-box" data-i18n-html="aiHelp" style="border-left-color:#ffd166;background:rgba(255,209,102,0.05);color:#cfc09a;">
-      AI features (translation + summary) are OFF by default.
+      AI features are OFF by default.
     </div>
-    <label style="margin-top:18px;" data-i18n="aiKeyLabel">GEMINI API KEY</label>
+
+    <label style="margin-top:18px;" data-i18n="aiEngineLabel">TRANSLATION ENGINE</label>
+    <select id="ai-engine" style="width:100%; padding:12px 14px; font-size:14px; background:rgba(0,8,18,0.8); border:1px solid #003855; color:#dceaf3; font-family:inherit;">
+      <option value="off"      data-i18n="aiEngineOff">Off (no translation)</option>
+      <option value="mymemory" data-i18n="aiEngineMyMemory">MyMemory (free, no key)</option>
+      <option value="gemini"   data-i18n="aiEngineGemini">Gemini (best, BYOK)</option>
+    </select>
+
+    <label style="margin-top:18px;" data-i18n="aiKeyLabel">GEMINI API KEY (only if Gemini selected)</label>
     <div class="row">
       <input type="password" id="ai-key" data-i18n-ph="aiKeyPh" placeholder="AIza... (aistudio.google.com)" autocomplete="off">
     </div>
     <div style="margin-top:6px; font-size:11px;">
-      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:#00ff9f;" data-i18n="aiGetKey">Get a free key →</a>
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:#00ff9f;" data-i18n="aiGetKey">Get a free Gemini key →</a>
     </div>
 
     <label style="margin-top:18px;" data-i18n="aiLangLabel">TRANSLATE TO</label>
@@ -524,6 +532,7 @@ const STORAGE_SEEN     = 'nits_seen_welcome_v1';
 const STORAGE_LANG     = 'nits_lang_v1';
 const STORAGE_GEMINI   = 'nits_gemini_key_v1';   // BYOK: user-supplied API key
 const STORAGE_AI_LANG  = 'nits_ai_lang_v1';      // target language for translation
+const STORAGE_AI_ENGINE= 'nits_ai_engine_v1';    // 'off' | 'mymemory' | 'gemini'
 const STORAGE_TR_CACHE = 'nits_tr_cache_v1';     // {hash → {lang → translated}}
 const STORAGE_SUM_CACHE= 'nits_sum_cache_v1';    // {globeId+lang → {summary, clusters}}
 
@@ -606,22 +615,26 @@ const I18N = {
     licPublic:        'PUB',
     licStandard:      'RSS',
     // ── AI ──
-    lblAI:            'AI ─ BYOK (Bring Your Own Key)',
-    aiHelp:           'AI features (translation + summary) are OFF by default. To enable, get a free Gemini API key from Google AI Studio and paste it below. Your key stays in this browser only — no server stores or sees it.',
-    aiKeyLabel:       'GEMINI API KEY',
+    lblAI:            'AI ─ Translation + BRIEF',
+    aiHelp:           'AI features are OFF by default. Pick "MyMemory" for no-key translation (free, ~1000 words/day), or "Gemini" for the best quality (BYOK, ~1500 req/day free). Keys stay in this browser only — no server stores or sees them.',
+    aiEngineLabel:    'TRANSLATION ENGINE',
+    aiEngineOff:      'Off (no translation)',
+    aiEngineMyMemory: 'MyMemory (free, no key)',
+    aiEngineGemini:   'Gemini (best, BYOK)',
+    aiKeyLabel:       'GEMINI API KEY (only if Gemini selected)',
     aiKeyPh:          'AIza... (from aistudio.google.com)',
-    aiGetKey:         'Get a free key →',
+    aiGetKey:         'Get a free Gemini key →',
     aiLangLabel:      'TRANSLATE TO',
-    aiLangHelp:       'Foreign-language titles will be translated to this language. Costs go on your own Gemini free tier (~1500 req/day).',
+    aiLangHelp:       'Foreign-language titles will be translated to this language. BRIEF/summary requires Gemini engine.',
     aiClearKey:       'CLEAR KEY',
     aiKeyCleared:     'API key cleared',
-    aiOff:            'AI: OFF (add Gemini API key in ⚙ to enable)',
-    aiTranslating:    'Translating titles via Gemini...',
+    aiOff:            'AI: OFF (enable in ⚙ SETTINGS)',
+    aiTranslating:    'Translating titles...',
     aiSummarizing:    'Generating BRIEF via Gemini...',
     aiTrFailed:       (n)=>`translation skipped (${n} batch failed, retry next refresh)`,
     briefTitle:       '─ DAILY SCAN',
     briefNoData:      'No SCAN yet for this category. Will populate on next AI refresh.',
-    briefAiNeeded:    'Enable AI (⚙ → BYOK) to see daily summary + clusters here.',
+    briefAiNeeded:    'Enable Gemini (⚙ → BYOK) to see daily summary + clusters here.',
     sampleAddAll:     '+ ADD ALL FREE PRESETS',
   },
   ja: {
@@ -687,22 +700,26 @@ const I18N = {
     licPublic:        '自由',
     licStandard:      'RSS',
     // ── AI ──
-    lblAI:            'AI ─ BYOK (自分の API キーを使用)',
-    aiHelp:           'AI 機能 (翻訳 + 要約) は初期 OFF です。 有効化するには Google AI Studio で無料の Gemini API キーを取得して下の欄に貼り付け。 キーはこのブラウザ内のみに保存され、 サーバには一切送信されません。',
-    aiKeyLabel:       'Gemini API キー',
+    lblAI:            'AI ─ 翻訳 + BRIEF',
+    aiHelp:           'AI 機能は初期 OFF です。 「MyMemory」 を選ぶと API キーなしで翻訳 (約 1000 words/日)、 「Gemini」 を選ぶと最高品質 (BYOK、 無料 1500 req/日)。 キーはこのブラウザ内のみに保存され、 サーバには一切送信されません。',
+    aiEngineLabel:    '翻訳エンジン',
+    aiEngineOff:      'OFF (翻訳しない)',
+    aiEngineMyMemory: 'MyMemory (無料、 キー不要)',
+    aiEngineGemini:   'Gemini (最高品質、 BYOK)',
+    aiKeyLabel:       'Gemini API キー (Gemini 選択時のみ使用)',
     aiKeyPh:          'AIza... (aistudio.google.com で取得)',
-    aiGetKey:         '無料キー取得 →',
+    aiGetKey:         'Gemini 無料キー取得 →',
     aiLangLabel:      '翻訳先言語',
-    aiLangHelp:       '他言語のタイトルはこの言語に翻訳されます。 コストは あなたの Gemini 無料枠 (約 1500 req/日) で賄われます。',
+    aiLangHelp:       '他言語のタイトルはこの言語に翻訳されます。 BRIEF / 要約は Gemini エンジンが必要です。',
     aiClearKey:       'キーを削除',
     aiKeyCleared:     'API キーを削除しました',
-    aiOff:            'AI: OFF (⚙ から Gemini API キーを入れると ON)',
-    aiTranslating:    'Gemini でタイトル翻訳中...',
+    aiOff:            'AI: OFF (⚙ 設定 で有効化できます)',
+    aiTranslating:    'タイトル翻訳中...',
     aiSummarizing:    'Gemini で BRIEF 生成中...',
     aiTrFailed:       (n)=>`翻訳スキップ (${n} batch 失敗、 次回 refresh で再試行)`,
     briefTitle:       '─ DAILY SCAN',
     briefNoData:      'このカテゴリの SCAN はまだありません。 次の AI 更新で追加されます。',
-    briefAiNeeded:    'AI を有効化 (⚙ → BYOK) すると ここに概観 + クラスタが出ます。',
+    briefAiNeeded:    'Gemini を有効化 (⚙ → BYOK) すると ここに概観 + クラスタが出ます。',
     sampleAddAll:     '+ 無料プリセットを全部追加',
   },
   zh: {
@@ -768,22 +785,26 @@ const I18N = {
     licPublic:        '自由',
     licStandard:      'RSS',
     // ── AI ──
-    lblAI:            'AI ─ BYOK (自带 API 密钥)',
-    aiHelp:           'AI 功能 (翻译 + 摘要) 默认关闭。 启用需从 Google AI Studio 获取免费的 Gemini API 密钥并粘贴到下方。 密钥仅保存在本浏览器中，不会上传至任何服务器。',
-    aiKeyLabel:       'Gemini API 密钥',
+    lblAI:            'AI ─ 翻译 + BRIEF',
+    aiHelp:           'AI 功能默认关闭。 选择 「MyMemory」 即可免密钥翻译 (约 1000 词/日)，或选择 「Gemini」 获取最佳质量 (BYOK，免费 1500 次/日)。 密钥仅保存在本浏览器中，不会上传至任何服务器。',
+    aiEngineLabel:    '翻译引擎',
+    aiEngineOff:      '关闭 (不翻译)',
+    aiEngineMyMemory: 'MyMemory (免费、 无需密钥)',
+    aiEngineGemini:   'Gemini (最佳、 BYOK)',
+    aiKeyLabel:       'Gemini API 密钥 (仅在选择 Gemini 时使用)',
     aiKeyPh:          'AIza... (aistudio.google.com 获取)',
-    aiGetKey:         '获取免费密钥 →',
+    aiGetKey:         '获取免费 Gemini 密钥 →',
     aiLangLabel:      '翻译目标语言',
-    aiLangHelp:       '其他语种的标题将被翻译为此语言。 费用计入 您的 Gemini 免费额度 (约 1500 次/日)。',
+    aiLangHelp:       '其他语种的标题将被翻译为此语言。 BRIEF / 摘要 需要 Gemini 引擎。',
     aiClearKey:       '清除密钥',
     aiKeyCleared:     'API 密钥已清除',
-    aiOff:            'AI: 关闭 (在 ⚙ 中输入 Gemini API 密钥即可开启)',
-    aiTranslating:    '正在用 Gemini 翻译标题...',
+    aiOff:            'AI: 关闭 (可在 ⚙ 设置 启用)',
+    aiTranslating:    '正在翻译标题...',
     aiSummarizing:    '正在用 Gemini 生成 BRIEF...',
     aiTrFailed:       (n)=>`翻译跳过 (${n} 个批次失败，下次刷新重试)`,
     briefTitle:       '─ DAILY SCAN',
     briefNoData:      '本类别尚无 SCAN。 将在下次 AI 更新时填充。',
-    briefAiNeeded:    '启用 AI (⚙ → BYOK) 后此处显示概观 + 集群。',
+    briefAiNeeded:    '启用 Gemini (⚙ → BYOK) 后此处显示概观 + 集群。',
     sampleAddAll:     '+ 一键添加全部免费预设',
   },
 };
@@ -854,6 +875,13 @@ function loadAiLang() {
   return localStorage.getItem(STORAGE_AI_LANG) || currentLang;
 }
 function saveAiLang(l) { localStorage.setItem(STORAGE_AI_LANG, l); }
+function loadAiEngine() {
+  const v = localStorage.getItem(STORAGE_AI_ENGINE);
+  // backward-compat: if old key was set without engine, default to gemini
+  if (!v && loadGeminiKey()) return 'gemini';
+  return ['off','mymemory','gemini'].includes(v) ? v : 'off';
+}
+function saveAiEngine(e) { localStorage.setItem(STORAGE_AI_ENGINE, e); }
 
 // Detect text language by character ranges (approximate)
 const RE_HIRAGANA = /[぀-ゟ]/;
@@ -926,7 +954,7 @@ async function geminiCall(prompt, apiKey, { jsonMode = true, retries = 3 } = {})
 }
 
 // Translate a batch of titles → return list of translated strings (same order/length).
-async function translateBatch(titles, targetLang, apiKey) {
+async function translateBatchGemini(titles, targetLang, apiKey) {
   const langName = { ja:'Japanese (日本語)', en:'English', zh:'Chinese (简体中文)' }[targetLang] || 'English';
   const prompt =
     `You are a professional translator. Translate the following news titles into ${langName}.\n` +
@@ -941,51 +969,104 @@ async function translateBatch(titles, targetLang, apiKey) {
   return result.map(s => String(s));
 }
 
+// MyMemory: free public translation, no key. Per-text endpoint.
+// Returns translated string or original on failure.
+async function translateOneMyMemory(text, sourceLang, targetLang) {
+  const pair = `${sourceLang}|${targetLang}`;
+  const url  = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${pair}`;
+  try {
+    const r = await fetch(url);
+    const data = await r.json();
+    if (data?.responseStatus === 200 && data?.responseData?.translatedText) {
+      return String(data.responseData.translatedText);
+    }
+    return text;
+  } catch { return text; }
+}
+
+// Batch wrapper that mimics Gemini batch interface, throttled to 3 concurrent.
+async function translateBatchMyMemory(titlesWithLang, targetLang) {
+  // titlesWithLang: [{text, sourceLang}]
+  const CONCURRENCY = 3;
+  const results = new Array(titlesWithLang.length);
+  let idx = 0;
+  async function worker() {
+    while (true) {
+      const i = idx++;
+      if (i >= titlesWithLang.length) return;
+      const { text, sourceLang } = titlesWithLang[i];
+      results[i] = await translateOneMyMemory(text, sourceLang, targetLang);
+    }
+  }
+  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+  return results;
+}
+
 // Walk through all items, translate titles that aren't in target language.
-// Uses cache aggressively to minimize API calls.
+// Uses cache aggressively to minimize API calls. Engine: off | mymemory | gemini.
 async function applyAiTranslation(items, statusCb) {
+  const engine = loadAiEngine();
+  if (engine === 'off') return items;
   const apiKey = loadGeminiKey();
-  if (!apiKey) return items;
+  if (engine === 'gemini' && !apiKey) return items;       // no key → no-op
   const targetLang = loadAiLang() || currentLang;
   const cache = loadTrCache();
-  const toTranslate = [];      // [{idx, text}]
+  const toTranslate = [];      // [{idx, text, sourceLang, key}]
   for (let i = 0; i < items.length; i++) {
     const orig = items[i].title || '';
     const detected = detectTextLang(orig);
     items[i].lang = detected;
     items[i].title_orig = orig;
     if (detected === targetLang) {
-      items[i].title_ja = orig;            // canonical "title in target lang" field
+      items[i].title_ja = orig;
       continue;
     }
-    // already cached?
     const k = trKey(orig);
     if (cache[k] && cache[k][targetLang]) {
       items[i].title_ja = cache[k][targetLang];
       continue;
     }
-    toTranslate.push({ idx: i, text: orig, key: k });
+    toTranslate.push({ idx: i, text: orig, sourceLang: detected === 'unknown' ? 'en' : detected, key: k });
   }
   if (!toTranslate.length) return items;
 
   statusCb?.(t('aiTranslating'), 'ok');
-  const BATCH = 20;
   let failed = 0;
-  for (let start = 0; start < toTranslate.length; start += BATCH) {
-    const chunk = toTranslate.slice(start, start + BATCH);
+
+  if (engine === 'mymemory') {
+    // per-item but concurrent
+    const batch = toTranslate.map(c => ({ text: c.text, sourceLang: c.sourceLang }));
     try {
-      const translated = await translateBatch(chunk.map(c => c.text), targetLang, apiKey);
-      chunk.forEach((c, j) => {
-        const trans = translated[j];
+      const translated = await translateBatchMyMemory(batch, targetLang);
+      toTranslate.forEach((c, j) => {
+        const trans = translated[j] || c.text;
         items[c.idx].title_ja = trans;
         cache[c.key] = cache[c.key] || {};
         cache[c.key][targetLang] = trans;
       });
     } catch (e) {
       failed++;
-      console.warn('translate batch failed', e);
-      // fallback: keep original title as title_ja so keywords still extract
-      chunk.forEach(c => { items[c.idx].title_ja = c.text; });
+      console.warn('mymemory failed', e);
+      toTranslate.forEach(c => { items[c.idx].title_ja = c.text; });
+    }
+  } else {
+    // gemini: batched
+    const BATCH = 20;
+    for (let start = 0; start < toTranslate.length; start += BATCH) {
+      const chunk = toTranslate.slice(start, start + BATCH);
+      try {
+        const translated = await translateBatchGemini(chunk.map(c => c.text), targetLang, apiKey);
+        chunk.forEach((c, j) => {
+          const trans = translated[j];
+          items[c.idx].title_ja = trans;
+          cache[c.key] = cache[c.key] || {};
+          cache[c.key][targetLang] = trans;
+        });
+      } catch (e) {
+        failed++;
+        console.warn('gemini batch failed', e);
+        chunk.forEach(c => { items[c.idx].title_ja = c.text; });
+      }
     }
   }
   saveTrCache(cache);
@@ -995,6 +1076,7 @@ async function applyAiTranslation(items, statusCb) {
 
 // Per-globe summary + cluster generation via Gemini.
 async function applyAiSummaries(globes, statusCb) {
+  if (loadAiEngine() !== 'gemini') return globes;       // summary requires Gemini
   const apiKey = loadGeminiKey();
   if (!apiKey || !globes.length) return globes;
   const targetLang = loadAiLang() || currentLang;
@@ -1049,21 +1131,33 @@ async function applyAiSummaries(globes, statusCb) {
 
 // ⭐ プリセットは「フリーで再配布可能」なソースのみ厳格に。
 // 'cc' = Creative Commons, 'public' = public domain or permissively reusable.
-// 商業メディアは追加しません — ユーザーが ADD A FEED で自分で追加してください。
 const SAMPLE_FEEDS = [
-  // ── Community-driven tech (public) ──
+  // ── Community / tech (public) ──
   { name:'Hacker News',         url:'https://news.ycombinator.com/rss',                                                  category:'tech',     license:'public' },
   { name:'Lobsters',            url:'https://lobste.rs/rss',                                                              category:'tech',     license:'public' },
-  // ── arXiv (CC by license) ──
+  // ── arXiv (CC) ──
   { name:'arXiv cs.AI',         url:'http://export.arxiv.org/rss/cs.AI',                                                  category:'academic', license:'cc' },
   { name:'arXiv cs.LG',         url:'http://export.arxiv.org/rss/cs.LG',                                                  category:'academic', license:'cc' },
   { name:'arXiv cs.CL',         url:'http://export.arxiv.org/rss/cs.CL',                                                  category:'academic', license:'cc' },
   { name:'arXiv cs.CV',         url:'http://export.arxiv.org/rss/cs.CV',                                                  category:'academic', license:'cc' },
   { name:'arXiv stat.ML',       url:'http://export.arxiv.org/rss/stat.ML',                                                category:'academic', license:'cc' },
-  // ── Wikinews (CC, 3 languages) ──
+  // ── Open Access journals (CC) ──
+  { name:'PLOS One',            url:'https://journals.plos.org/plosone/feed/atom',                                        category:'academic', license:'cc' },
+  // ── CC-licensed media (free to redistribute with attribution) ──
+  { name:'The Conversation',    url:'https://theconversation.com/articles.atom',                                          category:'analysis', license:'cc' },
+  { name:'ProPublica',          url:'https://www.propublica.org/feeds/propublica/main',                                   category:'analysis', license:'cc' },
+  // ── Government / Public Domain ──
+  { name:'NASA',                url:'https://www.nasa.gov/feed/',                                                         category:'science',  license:'public' },
+  { name:'ESA',                 url:'https://www.esa.int/rssfeed/Our_Activities',                                         category:'science',  license:'public' },
+  // ── Project Gutenberg (public domain books) ──
+  { name:'Project Gutenberg',   url:'https://www.gutenberg.org/cache/epub/feeds/today.rss',                              category:'books',    license:'public' },
+  // ── Wikinews (CC, 6 languages) ──
   { name:'Wikinews EN',         url:'https://en.wikinews.org/w/index.php?title=Special:RecentChanges&feed=rss',           category:'wiki',     license:'cc' },
   { name:'Wikinews JA',         url:'https://ja.wikinews.org/w/index.php?title=%E7%89%B9%E5%88%A5:%E6%9C%80%E8%BF%91%E3%81%AE%E6%9B%B4%E6%96%B0&feed=rss', category:'wiki', license:'cc' },
   { name:'Wikinews ZH',         url:'https://zh.wikinews.org/w/index.php?title=Special:RecentChanges&feed=rss',           category:'wiki',     license:'cc' },
+  { name:'Wikinews DE',         url:'https://de.wikinews.org/w/index.php?title=Special:RecentChanges&feed=rss',           category:'wiki',     license:'cc' },
+  { name:'Wikinews FR',         url:'https://fr.wikinews.org/w/index.php?title=Special:RecentChanges&feed=rss',           category:'wiki',     license:'cc' },
+  { name:'Wikinews ES',         url:'https://es.wikinews.org/w/index.php?title=Special:RecentChanges&feed=rss',           category:'wiki',     license:'cc' },
 ];
 
 const STOP_WORDS = new Set([
@@ -2205,6 +2299,7 @@ function openSettings() {
   document.getElementById('proxy-url').value = loadProxy();
   document.getElementById('ai-key').value    = loadGeminiKey();
   document.getElementById('ai-lang').value   = loadAiLang() || currentLang;
+  document.getElementById('ai-engine').value = loadAiEngine();
   document.getElementById('status-line').textContent = '';
   settingsModal.classList.add('active');
 }
@@ -2326,6 +2421,8 @@ document.getElementById('btn-save').addEventListener('click', async () => {
   saveGeminiKey(apiKey);
   const aiLang = document.getElementById('ai-lang').value;
   if (SUPPORTED_LANGS.includes(aiLang)) saveAiLang(aiLang);
+  const aiEng = document.getElementById('ai-engine').value;
+  saveAiEngine(aiEng);
   closeSettings();
   await runPipeline(setStatus);
 });
